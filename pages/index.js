@@ -1,113 +1,8 @@
 import { useEffect, useState, createElement } from 'react'
 import styles from '../styles/Home.module.css'
-
-class Controles {
-  constructor() {
-    this.right = false
-    this.left = false
-    this.thrust = false
-    this.#addListeners()
-  }
-  #addListeners() {
-    window.onkeydown = (e) => {
-      switch (e.key) {
-        case 'j':
-          this.left = true
-          break
-        case 'l':
-          this.right = true
-          break
-        case 'k':
-          this.thrust = true
-          break
-      }
-    }
-    window.onkeyup = (e) => {
-      switch (e.key) {
-        case 'j':
-          this.left = false
-          break
-        case 'l':
-          this.right = false
-          break
-        case 'k':
-          this.thrust = false
-          break
-      }
-    }
-  }
-}
-
-class Player {
-  constructor({ imgEl, width, height, position, rotation, thrust }) {
-    this.imgEl = imgEl
-    this.width = width
-    this.height = height
-    this.position = position
-    this.rotation = rotation
-    this.thrust = thrust
-    this.velocity = {
-      x: 0,
-      y: 0,
-    }
-    this.controles = new Controles()
-  }
-
-  render(ctx) {
-    ctx.shadowColor = 'rgba(255, 255, 255, 0.46)'
-    ctx.shadowBlur = 17
-    ctx.translate(this.position.x, this.position.y)
-    ctx.rotate(this.rotation)
-    ctx.drawImage(
-      this.imgEl,
-      -this.width / 2,
-      -this.height / 2,
-      this.width,
-      this.height
-    )
-    ctx.resetTransform()
-  }
-
-  update(ctx) {
-    if (this.controles.thrust) {
-      let factor = Math.pow(0.5, Math.abs(this.velocity.y + this.velocity.x))
-      this.velocity.x =
-        this.velocity.x +
-        factor * (Math.cos(this.rotation - Math.PI / 2) * this.thrust)
-      this.velocity.y =
-        this.velocity.y +
-        factor * (Math.sin(this.rotation - Math.PI / 2) * this.thrust)
-    }
-    console.log(this.velocity.y)
-    if (this.position.y <= 20 && Math.sign(this.velocity.y) === -1) {
-      this.velocity.y = (this.velocity.y / 2) * -1
-    }
-    if (
-      this.position.y >= innerHeight - 20 &&
-      Math.sign(this.velocity.y) === 1
-    ) {
-      this.velocity.y = (this.velocity.y / 2) * -1
-    }
-    if (this.position.x <= 20 && Math.sign(this.velocity.x) === -1) {
-      this.velocity.x = (this.velocity.x / 2) * -1
-    }
-    if (
-      this.position.x >= innerWidth - 20 &&
-      Math.sign(this.velocity.x) === 1
-    ) {
-      this.velocity.x = (this.velocity.x / 2) * -1
-    }
-    if (this.controles.right && !this.controles.left) {
-      this.rotation = this.rotation + 0.1
-    } else if (this.controles.left && !this.controles.right) {
-      this.rotation = this.rotation - 0.1
-    }
-    this.position.x += this.velocity.x
-    this.position.y += this.velocity.y
-
-    this.render(ctx)
-  }
-}
+import { Player } from '../classes/player'
+import { Controles } from '../classes/controles'
+import { Laser } from '../classes/laser'
 
 export default function Home() {
   const handleCanvasRef = (canvas) => {
@@ -119,8 +14,14 @@ export default function Home() {
 
     const playerImg = new Image()
     playerImg.src = '/j-ship.svg'
-    playerImg.style.textShadow = '0px 0px 17px rgba(255, 255, 255, 0.46)'
+
+    const laserImg = new Image()
+    laserImg.src = '/laser.svg'
+
+    const controles = new Controles()
+
     const player = new Player({
+      controles: controles,
       imgEl: playerImg,
       width: 27,
       height: 26,
@@ -132,11 +33,43 @@ export default function Home() {
       thrust: 0.02,
     })
 
+    const lasers = {}
+
+    let frame = 0
     const render = () => {
       requestAnimationFrame(render)
       ctx.clearRect(0, 0, innerWidth, innerHeight)
+
+      //handle updateing projectiles
+      frame = frame + 1
+      let laserKeys = Object.keys(lasers)
+      let lastLaserFrame = parseInt(laserKeys[laserKeys.length - 1]) || -10
+      if (controles.fire && lastLaserFrame + 10 < frame) {
+        const rotation = player.rotation
+        const position = {
+          x: player.position.x - Math.cos(rotation - 0.2 + Math.PI / 2) * 18,
+          y: player.position.y - Math.sin(rotation - 0.2 + Math.PI / 2) * 18,
+        }
+        const laser = new Laser({
+          imgEl: laserImg,
+          rotation: rotation,
+          position: position,
+        })
+        lasers[frame] = laser
+      }
+
+      laserKeys &&
+        laserKeys.forEach((laser) => {
+          if (lasers[laser].position.y <= 0) {
+            delete lasers[laser]
+          }
+          if (lasers[laser]) {
+            lasers[laser].update(ctx)
+          }
+        })
       player.update(ctx)
     }
+
     render()
   }
 
