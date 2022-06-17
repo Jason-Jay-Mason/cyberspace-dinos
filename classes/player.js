@@ -100,8 +100,22 @@ export class Player {
     //if there are current lasers, then update their position and delete them if they are off screen
     laserKeys &&
       laserKeys.forEach((laser) => {
-        if (this.lasers[laser].position.y <= 0) {
+        let laserValue = this.lasers[laser]
+        if (laserValue.position.y < 0) {
           delete this.lasers[laser]
+          return
+        }
+        if (laserValue.position.y > innerHeight) {
+          delete this.lasers[laser]
+          return
+        }
+        if (laserValue.position.x < 0) {
+          delete this.lasers[laser]
+          return
+        }
+        if (laserValue.position.x > innerWidth) {
+          delete this.lasers[laser]
+          return
         }
         if (this.lasers[laser]) {
           this.lasers[laser].update(ctx)

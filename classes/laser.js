@@ -5,8 +5,8 @@ export class Laser {
     this.position = position
     this.rotation = rotation
     this.velocity = {
-      x: Math.cos(this.rotation - Math.PI / 2) * 3,
-      y: Math.sin(this.rotation - Math.PI / 2) * 3,
+      x: Math.cos(this.rotation - Math.PI / 2) * 7,
+      y: Math.sin(this.rotation - Math.PI / 2) * 7,
     }
   }
   render(ctx) {
