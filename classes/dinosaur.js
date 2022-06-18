@@ -16,6 +16,7 @@ export class Dinosaur {
     this.width = width
     this.height = height
     this.borderPadding = 40
+    this.destroyedFrame = null
   }
   handleBorders() {
     if (
@@ -43,6 +44,12 @@ export class Dinosaur {
       this.velocity.x = this.velocity.x * -1
     }
   }
+  updateDinoPosition() {
+    this.handleBorders()
+    this.position.x = this.position.x + this.velocity.x
+    this.position.y = this.position.y + this.velocity.y
+    this.rotation += this.rotationVelocity
+  }
   render(ctx) {
     ctx.resetTransform()
     ctx.translate(this.position.x, this.position.y)
@@ -58,10 +65,7 @@ export class Dinosaur {
     ctx.resetTransform()
   }
   update(ctx, player) {
-    this.handleBorders()
-    this.position.x = this.position.x + this.velocity.x
-    this.position.y = this.position.y + this.velocity.y
-    this.rotation += this.rotationVelocity
+    this.updateDinoPosition()
     this.render(ctx)
   }
 }
