@@ -28,34 +28,8 @@ export class Dinosaurs {
       this.dinosaurs[frame] = dinosaur
     }
   }
-  renderDinos(ctx, player) {
-    const dinosaursKeys = Object.keys(this.dinosaurs) || []
-    const laserKeys = Object.keys(player.lasers)
 
-    dinosaursKeys.forEach((dinoKey) => {
-      laserKeys.length &&
-        laserKeys.forEach((laserKey) => {
-          if (this.dinosaurs[dinoKey] && player.lasers[laserKey]) {
-            const distance = Math.hypot(
-              player.lasers[laserKey].position.x -
-                this.dinosaurs[dinoKey].position.x,
-              player.lasers[laserKey].position.y -
-                this.dinosaurs[dinoKey].position.y
-            )
-            if (distance < 40) {
-              delete player.lasers[laserKey]
-              delete this.dinosaurs[dinoKey]
-              return
-            }
-          }
-        })
-      if (this.dinosaurs[dinoKey]) {
-        this.dinosaurs[dinoKey].update(ctx, player)
-      }
-    })
-  }
-  update(ctx, frame, player) {
+  update(ctx, frame) {
     this.buildDinosaurs(frame)
-    this.renderDinos(ctx, player)
   }
 }
