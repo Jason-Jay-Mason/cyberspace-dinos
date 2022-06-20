@@ -8,6 +8,7 @@ export class Laser {
       x: Math.cos(this.rotation - Math.PI / 2) * 7,
       y: Math.sin(this.rotation - Math.PI / 2) * 7,
     }
+    this.destroyedFrame = null
   }
   render(ctx) {
     ctx.translate(this.position.x, this.position.y)

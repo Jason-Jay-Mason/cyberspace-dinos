@@ -67,17 +67,29 @@ export default function Home() {
 
           // loop through the laser keys and see if they are colliding with any dinosaurs and update their properties accordingly
           dinoKeys.forEach((dinoKey) => {
-            //if a destroyed dino's animation is complete delete the expired dino
+            //get the difference in distance to the dino from the player
+            const playerDistance = Math.hypot(
+              player.position.x - dinosaurs.dinosaurs[dinoKey].position.x,
+              player.position.y - dinosaurs.dinosaurs[dinoKey].position.y
+            )
+            //check to see if the ship is colliding with the dino
             if (
-              dinosaurs.dinosaurs[dinoKey].destroyedFrame !== null &&
-              dinosaurs.dinosaurs[dinoKey].destroyedFrame + 10 < frame
+              playerDistance < 60 &&
+              dinosaurs.dinosaurs[dinoKey].destroyedFrame === null
             ) {
-              delete dinosaurs.dinosaurs[dinoKey]
+              //some basic physics for colliding with dinos
+              player.velocity.x -= dinosaurs.dinosaurs[dinoKey].velocity.x
+              player.velocity.y -= dinosaurs.dinosaurs[dinoKey].velocity.y
+              dinosaurs.dinosaurs[dinoKey].velocity.x += player.velocity.x
+              dinosaurs.dinosaurs[dinoKey].velocity.y += player.velocity.y
+              //can uncomment this if we want to dino to be destroyed on collisions
+              // dinosaurs.dinosaurs[dinoKey].destroyedFrame = frame
             }
+
             //loop through the lasers to detect collisions
             laserKeys.length &&
               laserKeys.forEach((laserKey) => {
-                if (dinosaurs.dinosaurs[dinoKey] && player.lasers[laserKey]) {
+                if (player.lasers[laserKey]) {
                   const distance = Math.hypot(
                     player.lasers[laserKey].position.x -
                       dinosaurs.dinosaurs[dinoKey].position.x,
@@ -90,12 +102,19 @@ export default function Home() {
                   ) {
                     delete player.lasers[laserKey]
                     dinosaurs.dinosaurs[dinoKey].destroyedFrame = frame
-                    return
                   }
                 }
               })
-            if (dinosaurs.dinosaurs[dinoKey]) {
-              dinosaurs.dinosaurs[dinoKey].update(ctx, player)
+
+            //update the dinos
+            dinosaurs.dinosaurs[dinoKey].update(ctx, player)
+
+            //if a destroyed dino's animation is complete delete the expired dino
+            if (
+              dinosaurs.dinosaurs[dinoKey].destroyedFrame !== null &&
+              dinosaurs.dinosaurs[dinoKey].destroyedFrame + 10 < frame
+            ) {
+              delete dinosaurs.dinosaurs[dinoKey]
             }
           })
           player.update(ctx, frame)
