@@ -17,6 +17,37 @@ export class Dinosaur {
     this.height = height
     this.borderPadding = 40
     this.destroyedFrame = null
+    //sprite props
+    this.spriteIndex = {
+      x: 0,
+      y: 0,
+    }
+    this.crop = {
+      x: 100,
+      y: 100,
+    }
+    this.currentSprite = {
+      x: 0,
+      y: 0,
+    }
+    this.updateFrame = 0
+  }
+  destroyAnimation() {}
+  handleAnimate(frame) {
+    if (this.destroyedFrame) {
+      this.destroyAnimation(frame)
+    } else {
+      if (this.updateFrame + 30 < frame) {
+        this.updateFrame = frame
+        this.currentSprite.x = this.spriteIndex.x * this.crop.x
+        if (this.spriteIndex.x >= 1) {
+          this.spriteIndex.x = 0
+        } else {
+          this.currentSprite.x = this.spriteIndex.x * this.crop.x
+          this.spriteIndex.x += 1
+        }
+      }
+    }
   }
   handleBorders() {
     if (
@@ -57,6 +88,10 @@ export class Dinosaur {
 
     ctx.drawImage(
       this.imgEl,
+      this.currentSprite.x,
+      0,
+      this.crop.x,
+      this.crop.y,
       -this.width / 2,
       -this.height / 2,
       this.width,
@@ -64,7 +99,8 @@ export class Dinosaur {
     )
     ctx.resetTransform()
   }
-  update(ctx, player) {
+  update(ctx, player, frame) {
+    this.handleAnimate(frame)
     this.updateDinoPosition()
     this.render(ctx)
   }

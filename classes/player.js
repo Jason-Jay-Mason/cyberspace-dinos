@@ -16,6 +16,7 @@ export class Player {
     }
     this.controles = new Controles()
     this.lasers = {}
+    this.score = 0
   }
 
   activatePrimaryThrusters() {

@@ -34,7 +34,7 @@ export default function Home() {
       laserImg.src = '/laser.svg'
 
       const dummyDino = new Image()
-      dummyDino.src = '/dino-dummy.png'
+      dummyDino.src = 'test6.svg'
       const dinoImages = [dummyDino]
 
       //generate the players in the game with this helper function. The first argument is the amount of players desired and Returns an array of Player objects
@@ -97,22 +97,23 @@ export default function Home() {
                       dinosaurs.dinosaurs[dinoKey].position.y
                   )
                   if (
-                    distance < 40 &&
+                    distance < 45 &&
                     dinosaurs.dinosaurs[dinoKey].destroyedFrame === null
                   ) {
                     delete player.lasers[laserKey]
+                    player.score += 1
                     dinosaurs.dinosaurs[dinoKey].destroyedFrame = frame
                   }
                 }
               })
 
             //update the dinos
-            dinosaurs.dinosaurs[dinoKey].update(ctx, player)
+            dinosaurs.dinosaurs[dinoKey].update(ctx, player, frame)
 
             //if a destroyed dino's animation is complete delete the expired dino
             if (
               dinosaurs.dinosaurs[dinoKey].destroyedFrame !== null &&
-              dinosaurs.dinosaurs[dinoKey].destroyedFrame + 10 < frame
+              dinosaurs.dinosaurs[dinoKey].destroyedFrame + 50 < frame
             ) {
               delete dinosaurs.dinosaurs[dinoKey]
             }
