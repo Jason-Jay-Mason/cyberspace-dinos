@@ -30,9 +30,9 @@ export class Player {
   }
   activateRotationThrusters() {
     if (this.controles.right && !this.controles.left) {
-      this.rotation = this.rotation + 0.1
+      this.rotation = this.rotation + 0.07
     } else if (this.controles.left && !this.controles.right) {
-      this.rotation = this.rotation - 0.1
+      this.rotation = this.rotation - 0.07
     }
   }
   fireLaser(frame) {
