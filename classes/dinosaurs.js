@@ -1,7 +1,7 @@
 import { Dinosaur } from '../classes/dinosaur'
 import { getBoundedRandom } from '../utils/game-utils'
 
-export class Dinosaurs {
+export class DinosaurSpawner {
   constructor({ amount, images }) {
     this.amount = amount
     this.images = images

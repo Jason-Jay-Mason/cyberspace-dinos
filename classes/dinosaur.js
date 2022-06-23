@@ -18,7 +18,7 @@ function generateExplosionArray() {
       color === 'rgba(252, 206, 94,'
         ? getBoundedRandom(5, 10)
         : getBoundedRandom(5, 20)
-    let uniqueRotation =
+    let yVelocityMultiplyer =
       color === 'rgba(252, 206, 94,' ? 0 : getBoundedRandom(-0.5, 0.5)
 
     final.push({
@@ -27,7 +27,7 @@ function generateExplosionArray() {
       speed,
       width,
       height,
-      uniqueRotation,
+      yVelocityMultiplyer,
     })
   }
 
@@ -70,22 +70,7 @@ export class Dinosaur {
     this.updateFrame = 0
   }
 
-  // destroyAnimation(frame) {
-  //   //move the y axis on the sprite down
-  //   if (this.spriteIndex.y === 0) {
-  //     this.spriteIndex.y += 1
-  //     this.currentSprite.y = this.crop.y * this.spriteIndex.y
-  //   }
-  //   //go through each fram on the bottom of the sprite sheet
-  //   if (this.updateFrame + 4 < frame) {
-  //     this.currentSprite.x += this.crop.x
-  //     this.updateFrame = frame
-  //   }
-  // }
   handleAnimate(frame) {
-    // if (this.destroyedFrame) {
-    //   this.destroyAnimation(frame)
-    // } else {
     if (this.updateFrame + 30 < frame) {
       this.updateFrame = frame
       this.currentSprite.x = this.spriteIndex.x * this.crop.x
@@ -94,7 +79,6 @@ export class Dinosaur {
       } else {
         this.currentSprite.x = this.spriteIndex.x * this.crop.x
         this.spriteIndex.x += 1
-        // }
       }
     }
   }
@@ -130,19 +114,49 @@ export class Dinosaur {
     this.position.y = this.position.y + this.velocity.y
     this.rotation += this.rotationVelocity
   }
+
+  destroyAnimation(ctx, frame) {
+    //check to see if this is the first time the function has run on this dino and if so, set the update frame to 0
+    if (this.destroyedFrame === frame) {
+      this.updateFrame = 0
+    }
+    //reset the transform on the context obj
+    ctx.resetTransform()
+    //translate the ctx to the dino's position
+    ctx.translate(this.position.x, this.position.y)
+
+    //loop through the explosion particles and display them on screen
+    for (let i = 0; i < this.explosionParticles.length; i++) {
+      ctx.rotate(this.explosionParticles[i].rotation)
+      //get an opacity value for fadding the particles out
+      let opacity = 200 / Math.pow(this.updateFrame, 2.6)
+      // set the particle fill color pased on the opacity
+      ctx.fillStyle = `${this.explosionParticles[i].color}${opacity.toFixed(
+        2
+      )})`
+      //create the rectangle on screen the +32 is for padding
+      ctx.fillRect(
+        (this.updateFrame * this.explosionVelocity) /
+          this.explosionParticles[i].speed +
+          32,
+        this.updateFrame *
+          this.explosionVelocity *
+          this.explosionParticles[i].yVelocityMultiplyer,
+        this.explosionParticles[i].height,
+        this.explosionParticles[i].width
+      )
+    }
+
+    this.updateFrame += 1
+    ctx.resetTransform()
+  }
+
   render(ctx) {
     ctx.resetTransform()
 
     ctx.translate(this.position.x, this.position.y)
     ctx.rotate(this.rotation)
-
-    ctx.shadowBlur = 17
-    if (this.destroyedFrame) {
-      ctx.shadowBlur = 7
-      ctx.shadowColor = 'rgba(255, 206, 94, 0.99)'
-    } else {
-      ctx.shadowColor = 'rgba(255, 255, 255, 0.46)'
-    }
+    ctx.shadowColor = 'rgba(255, 255, 255, 0.46)'
 
     ctx.drawImage(
       this.imgEl,
@@ -158,37 +172,15 @@ export class Dinosaur {
     ctx.resetTransform()
   }
 
-  destroyAnimation(ctx, frame) {
-    if (this.destroyedFrame === frame) {
-      this.updateFrame = 0
-    }
-    ctx.resetTransform()
-    ctx.translate(this.position.x, this.position.y)
-
-    for (let i = 0; i < this.explosionParticles.length; i++) {
-      ctx.rotate(this.explosionParticles[i].rotation)
-      let opacity = this.destroyedFrame / Math.pow(this.updateFrame, 2.5)
-      ctx.fillStyle = `${this.explosionParticles[i].color}${opacity.toFixed(
-        2
-      )})`
-      ctx.fillRect(
-        this.updateFrame / this.explosionParticles[i].speed + 32,
-        this.updateFrame * this.explosionParticles[i].uniqueRotation,
-        this.explosionParticles[i].height,
-        this.explosionParticles[i].width
-      )
-    }
-
-    this.updateFrame += this.explosionVelocity
-    ctx.resetTransform()
-  }
-
   update(ctx, player, frame) {
+    //check to see if the dino has been shot by a laser
     if (!this.destroyedFrame) {
+      //if not, hanlde the normal animations
       this.handleAnimate(frame)
       this.updateDinoPosition()
       this.render(ctx)
     } else {
+      //if the dino has been shot, play the destroy animation
       this.destroyAnimation(ctx, frame)
       this.updateDinoPosition()
     }
