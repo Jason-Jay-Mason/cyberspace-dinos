@@ -1,4 +1,5 @@
 import { getBoundedRandom } from '../utils/game-utils'
+import { Sprite } from './sprite'
 
 function generateExplosionArray() {
   let final = []
@@ -33,7 +34,8 @@ function generateExplosionArray() {
 
   return final
 }
-export class Dinosaur {
+
+export class Dinosaur extends Sprite {
   constructor({
     imgEl,
     rotation,
@@ -43,6 +45,22 @@ export class Dinosaur {
     width,
     height,
   }) {
+    //sprite props
+    super({
+      spriteIndex: {
+        x: 0,
+        y: 0,
+      },
+      crop: {
+        x: 100,
+        y: 100,
+      },
+      currentSprite: {
+        x: 0,
+        y: 0,
+      },
+      updateFrame: 0,
+    })
     this.imgEl = imgEl
     this.rotation = rotation
     this.rotationVelocity = rotationVelocity
@@ -54,20 +72,6 @@ export class Dinosaur {
     this.destroyedFrame = null
     this.explosionVelocity = 2
     this.explosionParticles = generateExplosionArray()
-    //sprite props
-    this.spriteIndex = {
-      x: 0,
-      y: 0,
-    }
-    this.crop = {
-      x: 100,
-      y: 100,
-    }
-    this.currentSprite = {
-      x: 0,
-      y: 0,
-    }
-    this.updateFrame = 0
   }
 
   handleAnimate(frame) {

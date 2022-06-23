@@ -1,7 +1,25 @@
 import { Controles } from './controles.js'
 import { Laser } from './laser'
-export class Player {
+import { Sprite } from './sprite'
+
+export class Player extends Sprite {
   constructor({ imgEl, laserImg, width, height, position, rotation, thrust }) {
+    //sprite props
+    super({
+      spriteIndex: {
+        x: 0,
+        y: 0,
+      },
+      crop: {
+        x: 280,
+        y: 200,
+      },
+      currentSprite: {
+        x: 0,
+        y: 0,
+      },
+      updateFrame: 0,
+    })
     this.imgEl = imgEl
     this.laserImg = laserImg
     this.width = width
@@ -17,10 +35,11 @@ export class Player {
     this.controles = new Controles()
     this.lasers = {}
     this.score = 0
+    this.thrusterLengnth = 0
   }
 
   activatePrimaryThrusters() {
-    let factor = Math.pow(0.5, Math.abs(this.velocity.y + this.velocity.x))
+    let factor = Math.pow(0.7, Math.abs(this.velocity.y + this.velocity.x))
     this.velocity.x =
       this.velocity.x +
       factor * (Math.cos(this.rotation - Math.PI / 2) * this.thrust)
@@ -144,6 +163,26 @@ export class Player {
       this.width,
       this.height
     )
+    if (!this.controles.thrust && this.thrusterLengnth !== 0) {
+      this.thrusterLengnth = 0
+    }
+    if (this.controles.thrust) {
+      this.thrusterLengnth += 1
+      let colorStop = 1 - 1 / this.thrusterLengnth
+      ctx.translate(-this.width / 5.2, this.height / 2)
+      let grd = ctx.createLinearGradient(
+        this.width / 2 / 2,
+        0,
+        this.width / 2 / 2,
+        this.height / 2.5
+      )
+      grd.addColorStop(0, `rgba(206, 77, 69, ${colorStop})`)
+      grd.addColorStop(colorStop.toFixed(2), 'rgba(206, 77, 69, 0)')
+      ctx.fillStyle = grd
+
+      ctx.fillRect(0, 0, this.width / 2, this.height / 2.5)
+    }
+
     ctx.resetTransform()
   }
 

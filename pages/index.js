@@ -6,14 +6,14 @@ function generatePlayers(amount, playerImg, laserImg) {
   const player = new Player({
     imgEl: playerImg,
     laserImg: laserImg,
-    width: 27,
-    height: 26,
+    width: 25,
+    height: 22,
     position: {
       x: innerWidth / 2,
       y: innerHeight / 2,
     },
     rotation: 0,
-    thrust: 0.02,
+    thrust: 0.09,
   })
   return [player]
 }
@@ -28,7 +28,7 @@ export default function Home() {
 
       // create the image elements for all the object in the game
       const playerImg = new Image()
-      playerImg.src = '/j-ship.svg'
+      playerImg.src = '/j-ship-6.svg'
 
       const laserImg = new Image()
       laserImg.src = '/laser.svg'
