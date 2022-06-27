@@ -3,7 +3,16 @@ import { Laser } from './laser'
 import { Sprite } from './sprite'
 
 export class Player extends Sprite {
-  constructor({ imgEl, laserImg, width, height, position, rotation, thrust }) {
+  constructor({
+    imgEl,
+    laserImg,
+    width,
+    height,
+    position,
+    rotation,
+    thrust,
+    playerType,
+  }) {
     //sprite props
     super({
       spriteIndex: {
@@ -36,6 +45,7 @@ export class Player extends Sprite {
     this.lasers = {}
     this.score = 0
     this.thrusterLengnth = 0
+    this.isAi = playerType == 'ai'
   }
 
   activatePrimaryThrusters() {

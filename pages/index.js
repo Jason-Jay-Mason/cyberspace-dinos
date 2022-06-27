@@ -33,16 +33,21 @@ export default function Home() {
       const laserImg = new Image()
       laserImg.src = '/laser.svg'
 
-      const dummyDino = new Image()
-      dummyDino.src = '/test8.svg'
-      const dinoImages = [dummyDino]
+      const wordPressRex = new Image()
+      wordPressRex.src = '/wordpress-rex.svg'
+      const wixRaptor = new Image()
+      wixRaptor.src = '/wix-raptor.svg'
+      const dinoImages = [
+        { image: wixRaptor, width: 90, height: 90 },
+        { image: wordPressRex, width: 110, height: 110 },
+      ]
 
       //generate the players in the game with this helper function. The first argument is the amount of players desired and Returns an array of Player objects
       const players = generatePlayers(1, playerImg, laserImg)
 
       //generate an object with dinosaurs with a key equal to the created frame, the amount is the max amount of dinos that will be on screen
       const dinosaurSpawner = new DinosaurSpawner({
-        amount: 7,
+        amount: 4,
         images: dinoImages,
       })
 
