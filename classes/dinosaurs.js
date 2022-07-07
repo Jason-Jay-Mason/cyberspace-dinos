@@ -7,6 +7,7 @@ export class DinosaurSpawner {
     this.images = images
     this.positions
     this.dinosaurs = {}
+    this.dinoKeys = []
   }
   getSpawnPoint() {
     const spawnAxis = Math.random() < 0.5 ? 'x' : 'y'
@@ -62,17 +63,17 @@ export class DinosaurSpawner {
   }
   buildDinosaurs(frame) {
     //get the keys of the dinosaurs obj for looping
-    const dinosaursKeys = Object.keys(this.dinosaurs) || []
+    this.dinoKeys = Object.keys(this.dinosaurs) || []
 
     let dinoPositions = []
-    dinosaursKeys.forEach((dinokey) => {
+    this.dinoKeys.forEach((dinokey) => {
       dinoPositions.push(this.dinosaurs[dinokey].position.x)
       dinoPositions.push(this.dinosaurs[dinokey].position.y)
     })
     this.dinoPositions = dinoPositions
 
     //only create new dinosaurs if there are not enough
-    if (dinosaursKeys.length < this.amount) {
+    if (this.dinoKeys.length < this.amount) {
       //use this helper function to get a random spawn pint and velocity
       const { spawnPosition, spawnVelocity, imageIndex } = this.getSpawnPoint()
       //create a new dino
@@ -95,8 +96,20 @@ export class DinosaurSpawner {
       this.dinosaurs[frame] = dinosaur
     }
   }
+  updateDinos(ctx, frame) {
+    this.dinoKeys.forEach((dinoKey) => {
+      this.dinosaurs[dinoKey].update(ctx, frame)
+      if (
+        this.dinosaurs[dinoKey].destroyedFrame !== null &&
+        this.dinosaurs[dinoKey].destroyedFrame + 340 < frame
+      ) {
+        delete this.dinosaurs[dinoKey]
+      }
+    })
+  }
 
   update(ctx, frame) {
     this.buildDinosaurs(frame)
+    this.updateDinos(ctx, frame)
   }
 }

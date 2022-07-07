@@ -73,6 +73,7 @@ export class Dinosaur extends Sprite {
     this.explosionVelocity = 2
     this.explosionParticles = generateExplosionArray()
     this.playerDistance = 0
+    this.collision = false
   }
 
   handleAnimate(frame) {
@@ -177,7 +178,7 @@ export class Dinosaur extends Sprite {
     ctx.resetTransform()
   }
 
-  update(ctx, player, frame) {
+  update(ctx, frame) {
     //check to see if the dino has been shot by a laser
     if (!this.destroyedFrame) {
       //if not, hanlde the normal animations

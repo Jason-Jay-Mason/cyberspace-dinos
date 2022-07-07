@@ -1,25 +1,8 @@
 import styles from '../styles/Home.module.css'
 import { Player } from '../classes/player'
 import { DinosaurSpawner } from '../classes/dinosaurs'
-import { useState } from 'react'
+import { PlayerSpawner } from '../classes/player-spawner'
 
-function generatePlayers(amount, playerImg, laserImg, dinoCount) {
-  const player = new Player({
-    imgEl: playerImg,
-    laserImg: laserImg,
-    width: 25,
-    height: 22,
-    position: {
-      x: innerWidth / 2,
-      y: innerHeight / 2,
-    },
-    rotation: 0,
-    thrust: 0.09,
-    playerType: 'ai',
-    dinoCount: dinoCount,
-  })
-  return [player]
-}
 const handleLoadNetwork = async () => {
   const res = await fetch('/api/network/')
   const data = await res.json()
@@ -37,7 +20,6 @@ const handleSaveNetwork = async (network) => {
 }
 
 export default function Home() {
-  const [topPlayer, setTopPlayer] = useState(null)
   const handleCanvasRef = (canvas) => {
     if (canvas) {
       //set the canvas height and width
@@ -62,17 +44,18 @@ export default function Home() {
         { image: wordPressRex, width: 110, height: 110 },
       ]
 
-      //set a dinoCounH
-      let dinoCount = 1
-
       //generate an object with dinosaurs with a key equal to the created frame, the amount is the max amount of dinos that will be on screen
       const dinosaurSpawner = new DinosaurSpawner({
-        amount: dinoCount,
+        amount: 1,
         images: dinoImages,
       })
 
-      //generate the players in the game with this helper function. The first argument is the amount of players desired and Returns an array of Player objects
-      const players = generatePlayers(1, playerImg, laserImg, dinoCount)
+      const playerSpawner = new PlayerSpawner({
+        amount: 1,
+        playerImg: playerImg,
+        laserImg: laserImg,
+        dinoCount: dinosaurSpawner.amount,
+      })
 
       //declaring a number that increase by one every time the render function is called. This is so that we can have a messurment of time in the game
       const render = (time) => {
@@ -83,7 +66,9 @@ export default function Home() {
         ctx.clearRect(0, 0, innerWidth, innerHeight)
 
         //looping through the players array and updating each player and checking for collisions with the dinosaurs
-        players.forEach((player) => {
+        const playerKeys = Object.keys(playerSpawner.players)
+        playerKeys.forEach((playerKey) => {
+          const player = playerSpawner.players[playerKey]
           //get the laser keys for this player, lasers are created in an object with a key equal to the current frame
           const laserKeys = Object.keys(player.lasers)
 
@@ -97,20 +82,33 @@ export default function Home() {
               player.position.x - dinosaurSpawner.dinosaurs[dinoKey].position.x,
               player.position.y - dinosaurSpawner.dinosaurs[dinoKey].position.y
             )
-            //push the distances into the radar
-            dinosaurSpawner.dinosaurs[dinoKey].playerDistance = playerDistance
+
+            if (
+              dinosaurSpawner.dinosaurs[dinoKey].collision == true &&
+              playerDistance > 60
+            ) {
+              dinosaurSpawner.dinosaurs[dinoKey].collision = false
+            }
             //check to see if the ship is colliding with the dino
             if (
               playerDistance < 60 &&
-              dinosaurSpawner.dinosaurs[dinoKey].destroyedFrame === null
+              dinosaurSpawner.dinosaurs[dinoKey].collision == false
             ) {
+              player.score -= 10
+              const playerVelocity = player.velocity
+              const dinoVelocity = dinosaurSpawner.dinosaurs[dinoKey].velocity
               //some basic physics for colliding with dinos
-              player.velocity.x -= dinosaurSpawner.dinosaurs[dinoKey].velocity.x
-              player.velocity.y -= dinosaurSpawner.dinosaurs[dinoKey].velocity.y
-              dinosaurSpawner.dinosaurs[dinoKey].velocity.x += player.velocity.x
-              dinosaurSpawner.dinosaurs[dinoKey].velocity.y += player.velocity.y
+              player.velocity.x = -0.5 * playerVelocity.x + 0.5 * dinoVelocity.x
+              player.velocity.y = -0.5 * playerVelocity.y + 0.5 * dinoVelocity.y
+
+              dinosaurSpawner.dinosaurs[dinoKey].velocity.x =
+                -0.5 * dinoVelocity.x - 0.5 * playerVelocity.x
+              dinosaurSpawner.dinosaurs[dinoKey].velocity.y =
+                -0.5 * dinoVelocity.y - 0.5 * playerVelocity.y
+
               //can uncomment this if we want to dino to be destroyed on collisions
-              // dinosaurSpawner.dinosaurs[dinoKey].destroyedFrame = frame
+              dinosaurSpawner.dinosaurs[dinoKey].collision = true
+              dinosaurSpawner.dinosaurs[dinoKey].destroyedFrame = frame
             }
 
             //loop through the lasers to detect collisions
@@ -133,23 +131,12 @@ export default function Home() {
                   }
                 }
               })
-
-            //update the dinos
-            dinosaurSpawner.dinosaurs[dinoKey].update(ctx, player, frame)
-
-            //if a destroyed dino's animation is complete delete the expired dino
-            if (
-              dinosaurSpawner.dinosaurs[dinoKey].destroyedFrame !== null &&
-              dinosaurSpawner.dinosaurs[dinoKey].destroyedFrame + 350 < frame
-            ) {
-              delete dinosaurSpawner.dinosaurs[dinoKey]
-            }
           })
           player.update(ctx, frame, dinosaurSpawner.dinosaurs)
         })
 
-        //updating the dinosaurs
-        dinosaurSpawner.update(ctx, frame, players[0])
+        playerSpawner.update(frame)
+        dinosaurSpawner.update(ctx, frame)
       }
 
       //call the render function above

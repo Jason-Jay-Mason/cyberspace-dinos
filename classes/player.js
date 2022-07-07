@@ -14,6 +14,7 @@ export class Player extends Sprite {
     thrust,
     playerType,
     dinoCount,
+    startScore,
   }) {
     //sprite props
     super({
@@ -45,7 +46,7 @@ export class Player extends Sprite {
     }
     this.controles = new Controles(playerType)
     this.lasers = {}
-    this.score = 0
+    this.score = startScore
     this.thrusterLengnth = 0
     this.dinoRadar = [innerWidth, innerHeight]
     this.isAi = playerType == 'ai'
