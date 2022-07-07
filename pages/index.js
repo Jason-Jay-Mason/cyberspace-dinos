@@ -1,6 +1,7 @@
 import styles from '../styles/Home.module.css'
 import { Player } from '../classes/player'
 import { DinosaurSpawner } from '../classes/dinosaurs'
+import { useState } from 'react'
 
 function generatePlayers(amount, playerImg, laserImg, dinoCount) {
   const player = new Player({
@@ -19,7 +20,24 @@ function generatePlayers(amount, playerImg, laserImg, dinoCount) {
   })
   return [player]
 }
+const handleLoadNetwork = async () => {
+  const res = await fetch('/api/network/')
+  const data = await res.json()
+  console.log(data)
+}
+
+const handleSaveNetwork = async (network) => {
+  const res = await fetch('/api/network/', {
+    method: 'POST',
+    headers: { 'Content-type': 'application/json' },
+    body: JSON.stringify(network),
+  })
+  const json = await res.json()
+  console.log(json)
+}
+
 export default function Home() {
+  const [topPlayer, setTopPlayer] = useState(null)
   const handleCanvasRef = (canvas) => {
     if (canvas) {
       //set the canvas height and width
@@ -141,6 +159,8 @@ export default function Home() {
 
   return (
     <div className={styles.container}>
+      <button onClick={handleSaveNetwork}>save</button>
+      <button onClick={handleLoadNetwork}>load</button>
       <canvas className={styles.canvas} ref={handleCanvasRef}></canvas>
     </div>
   )

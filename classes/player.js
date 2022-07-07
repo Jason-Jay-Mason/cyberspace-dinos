@@ -165,12 +165,12 @@ export class Player extends Sprite {
   }
 
   controleShip(frame) {
-    if (this.ai) {
-      this.controles.left = this.ai.outputs[0]
-      this.controles.right = this.ai.outputs[1]
-      this.controles.thrust = this.ai.outputs[2]
-      this.controles.fire = this.ai.outputs[3]
-    }
+    // if (this.ai) {
+    //   this.controles.left = this.ai.outputs[0]
+    //   this.controles.right = this.ai.outputs[1]
+    //   this.controles.thrust = this.ai.outputs[2]
+    //   this.controles.fire = this.ai.outputs[3]
+    // }
     if (this.controles.left) {
       this.activateRotationThrusters('left')
     }
@@ -221,11 +221,8 @@ export class Player extends Sprite {
       Math.abs(this.position.x - innerWidth / 2) -
       innerWidth / 2 +
       this.boundaryPadding
-    final.push(Math.abs(x))
-    final.push(Math.abs(y))
-
-    // //finally push the rotation to the radar
-    // final.push(this.rotation)
+    final.push(x)
+    final.push(y)
 
     // dinoRadar.length = dinovalues.length*3 + 2(boundaries) + 1(rotation) + 1(targeted dino) = dinovalues.length*3 + 4
     this.dinoRadar = final
