@@ -1,23 +1,6 @@
 import styles from '../styles/Home.module.css'
-import { Player } from '../classes/player'
 import { DinosaurSpawner } from '../classes/dinosaurs'
 import { PlayerSpawner } from '../classes/player-spawner'
-
-const handleLoadNetwork = async () => {
-  const res = await fetch('/api/network/')
-  const data = await res.json()
-  console.log(data)
-}
-
-const handleSaveNetwork = async (network) => {
-  const res = await fetch('/api/network/', {
-    method: 'POST',
-    headers: { 'Content-type': 'application/json' },
-    body: JSON.stringify(network),
-  })
-  const json = await res.json()
-  console.log(json)
-}
 
 export default function Home() {
   const handleCanvasRef = (canvas) => {
@@ -51,7 +34,7 @@ export default function Home() {
       })
 
       const playerSpawner = new PlayerSpawner({
-        amount: 1,
+        amount: 3,
         playerImg: playerImg,
         laserImg: laserImg,
         dinoCount: dinosaurSpawner.amount,
@@ -126,7 +109,7 @@ export default function Home() {
                     dinosaurSpawner.dinosaurs[dinoKey].destroyedFrame === null
                   ) {
                     delete player.lasers[laserKey]
-                    player.score += 1
+                    player.score += 10
                     dinosaurSpawner.dinosaurs[dinoKey].destroyedFrame = frame
                   }
                 }
@@ -146,8 +129,6 @@ export default function Home() {
 
   return (
     <div className={styles.container}>
-      <button onClick={handleSaveNetwork}>save</button>
-      <button onClick={handleLoadNetwork}>load</button>
       <canvas className={styles.canvas} ref={handleCanvasRef}></canvas>
     </div>
   )

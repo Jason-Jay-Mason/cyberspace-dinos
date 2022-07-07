@@ -1,3 +1,4 @@
+import { Network } from './network'
 import { Player } from './player'
 
 export class PlayerSpawner {
@@ -9,8 +10,23 @@ export class PlayerSpawner {
     this.players = {}
     this.playerKeys = []
     this.playerValues = []
-    this.highScore = 0
+    this.highestScore = 10
     this.bestPlayer
+    this.loading = false
+  }
+  async saveNetwork(network) {
+    const res = await fetch('/api/network/', {
+      method: 'POST',
+      headers: { 'Content-type': 'application/json' },
+      body: JSON.stringify(network),
+    })
+    const json = await res.json()
+    console.log(json)
+  }
+  async loadNetwork() {
+    const res = await fetch('/api/network/')
+    const network = await res.json()
+    return network
   }
   deletePlayers() {
     this.playerKeys = Object.keys(this.players) || []
@@ -24,15 +40,24 @@ export class PlayerSpawner {
       }
       return best
     })
+    if (this.bestPlayer.score > this.highestScore) {
+      this.highestScore = this.bestPlayer.score
+      this.bestPlayer.score = 0
+      this.saveNetwork(this.bestPlayer.ai)
+    }
     this.playerKeys.forEach((playerKey) => {
-      if (this.players[playerKey].score + 10 < this.bestPlayer.score) {
+      if (this.players[playerKey].score + 1000 < this.bestPlayer.score) {
         delete this.players[playerKey]
       }
     })
   }
-  createPlayers(frame) {
+  async createPlayers(frame) {
+    this.loading = true
     //only create new players if there are not enough
     if (this.playerKeys.length < this.amount) {
+      //load best network
+      const res = await this.loadNetwork()
+
       //create a new player
       const player = new Player({
         imgEl: this.playerImg,
@@ -48,14 +73,18 @@ export class PlayerSpawner {
         playerType: 'ai',
         dinoCount: this.dinoCount,
         startScore: this.bestPlayer ? this.bestPlayer.score : 0,
+        network: res.network ? JSON.parse(res.network) : null,
       })
       //add the dino to the dinosaurs object
       this.players[frame] = player
+      this.loading = false
     }
   }
 
   update(frame) {
     this.deletePlayers()
-    this.createPlayers(frame)
+    if (this.playerKeys.length < this.amount && this.loading === false) {
+      this.createPlayers(frame)
+    }
   }
 }

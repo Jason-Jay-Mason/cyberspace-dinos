@@ -15,6 +15,7 @@ export class Player extends Sprite {
     playerType,
     dinoCount,
     startScore,
+    network,
   }) {
     //sprite props
     super({
@@ -50,12 +51,18 @@ export class Player extends Sprite {
     this.thrusterLengnth = 0
     this.dinoRadar = [innerWidth, innerHeight]
     this.isAi = playerType == 'ai'
-    this.ai = new Network({
-      inputCount: dinoCount * 2 + 3,
-      outputCount: 4,
-      hiddenLayers: 2,
-      hiddenLayerInputCount: dinoCount * 2 + 3,
-    })
+    if (network) {
+      this.ai = network
+    } else {
+      this.ai = new Network({
+        inputCount: dinoCount * 2 + 3,
+        outputCount: 4,
+        hiddenLayers: 2,
+        hiddenLayerInputCount: dinoCount * 2 + 3,
+      })
+    }
+
+    console.log(this.network)
   }
 
   activatePrimaryThrusters() {
@@ -137,24 +144,28 @@ export class Player extends Sprite {
       this.position.y <= this.boundaryPadding &&
       Math.sign(this.velocity.y) === -1
     ) {
+      this.score -= 10
       this.velocity.y = (this.velocity.y / 2) * -1
     }
     if (
       this.position.y >= innerHeight - this.boundaryPadding &&
       Math.sign(this.velocity.y) === 1
     ) {
+      this.score -= 10
       this.velocity.y = (this.velocity.y / 2) * -1
     }
     if (
       this.position.x <= this.boundaryPadding &&
       Math.sign(this.velocity.x) === -1
     ) {
+      this.score -= 10
       this.velocity.x = (this.velocity.x / 2) * -1
     }
     if (
       this.position.x >= innerWidth - this.boundaryPadding &&
       Math.sign(this.velocity.x) === 1
     ) {
+      this.score -= 10
       this.velocity.x = (this.velocity.x / 2) * -1
     }
   }
@@ -166,12 +177,12 @@ export class Player extends Sprite {
   }
 
   controleShip(frame) {
-    // if (this.ai) {
-    //   this.controles.left = this.ai.outputs[0]
-    //   this.controles.right = this.ai.outputs[1]
-    //   this.controles.thrust = this.ai.outputs[2]
-    //   this.controles.fire = this.ai.outputs[3]
-    // }
+    if (this.ai) {
+      this.controles.left = this.ai.outputs[0]
+      this.controles.right = this.ai.outputs[1]
+      this.controles.thrust = this.ai.outputs[2]
+      this.controles.fire = this.ai.outputs[3]
+    }
     if (this.controles.left) {
       this.activateRotationThrusters('left')
     }
@@ -229,6 +240,26 @@ export class Player extends Sprite {
     this.dinoRadar = final
   }
 
+  fitness() {
+    if (this.velocity.x == 0 && this.velocity.y == 0) {
+      this.score -= 0.1
+    }
+    const centerBoarders = {
+      left: innerWidth / 2 - innerWidth * 0.25,
+      right: innerWidth / 2 + innerWidth * 0.25,
+      bottom: innerHeight / 2 + innerHeight * 0.25,
+      top: innerHeight / 2 - innerHeight * 0.25,
+    }
+    if (
+      this.position.x > centerBoarders.left &&
+      this.position.x < centerBoarders.right &&
+      this.position.y > centerBoarders.top &&
+      this.position.y < centerBoarders.bottom
+    ) {
+      this.score -= 0.1
+    }
+  }
+
   render(ctx) {
     ctx.shadowBlur = 17
     ctx.translate(this.position.x, this.position.y)
@@ -265,6 +296,8 @@ export class Player extends Sprite {
   }
 
   update(ctx, frame, dinosaurs) {
+    // this.fitness()
+    console.log(this.score)
     if (this.isAi) {
       this.radarDectector(dinosaurs)
       const outputs = Network.feed(this.dinoRadar, this.ai)
