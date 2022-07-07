@@ -1,5 +1,5 @@
 export class Controles {
-  constructor() {
+  constructor(controleType) {
     this.right = false
     this.left = false
     this.thrust = false

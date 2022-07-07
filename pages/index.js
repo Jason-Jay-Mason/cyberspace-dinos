@@ -2,7 +2,7 @@ import styles from '../styles/Home.module.css'
 import { Player } from '../classes/player'
 import { DinosaurSpawner } from '../classes/dinosaurs'
 
-function generatePlayers(amount, playerImg, laserImg) {
+function generatePlayers(amount, playerImg, laserImg, dinoCount) {
   const player = new Player({
     imgEl: playerImg,
     laserImg: laserImg,
@@ -14,6 +14,8 @@ function generatePlayers(amount, playerImg, laserImg) {
     },
     rotation: 0,
     thrust: 0.09,
+    playerType: 'ai',
+    dinoCount: dinoCount,
   })
   return [player]
 }
@@ -42,25 +44,25 @@ export default function Home() {
         { image: wordPressRex, width: 110, height: 110 },
       ]
 
-      //generate the players in the game with this helper function. The first argument is the amount of players desired and Returns an array of Player objects
-      const players = generatePlayers(1, playerImg, laserImg)
+      //set a dinoCounH
+      let dinoCount = 1
 
       //generate an object with dinosaurs with a key equal to the created frame, the amount is the max amount of dinos that will be on screen
       const dinosaurSpawner = new DinosaurSpawner({
-        amount: 4,
+        amount: dinoCount,
         images: dinoImages,
       })
 
+      //generate the players in the game with this helper function. The first argument is the amount of players desired and Returns an array of Player objects
+      const players = generatePlayers(1, playerImg, laserImg, dinoCount)
+
       //declaring a number that increase by one every time the render function is called. This is so that we can have a messurment of time in the game
-      let frame = 0
-      const render = () => {
+      const render = (time) => {
+        let frame = time
         //This function will call a function each time an animation frame is ready in the browser. So essentially we a creating an infinite loop to simulate objects moving through time and space
         requestAnimationFrame(render)
         //We clear the last frame so that we can render the new frame
         ctx.clearRect(0, 0, innerWidth, innerHeight)
-
-        //handle updateing the frame count
-        frame = frame + 1
 
         //looping through the players array and updating each player and checking for collisions with the dinosaurs
         players.forEach((player) => {
@@ -77,6 +79,8 @@ export default function Home() {
               player.position.x - dinosaurSpawner.dinosaurs[dinoKey].position.x,
               player.position.y - dinosaurSpawner.dinosaurs[dinoKey].position.y
             )
+            //push the distances into the radar
+            dinosaurSpawner.dinosaurs[dinoKey].playerDistance = playerDistance
             //check to see if the ship is colliding with the dino
             if (
               playerDistance < 60 &&
@@ -118,12 +122,12 @@ export default function Home() {
             //if a destroyed dino's animation is complete delete the expired dino
             if (
               dinosaurSpawner.dinosaurs[dinoKey].destroyedFrame !== null &&
-              dinosaurSpawner.dinosaurs[dinoKey].destroyedFrame + 25 < frame
+              dinosaurSpawner.dinosaurs[dinoKey].destroyedFrame + 350 < frame
             ) {
               delete dinosaurSpawner.dinosaurs[dinoKey]
             }
           })
-          player.update(ctx, frame)
+          player.update(ctx, frame, dinosaurSpawner.dinosaurs)
         })
 
         //updating the dinosaurs

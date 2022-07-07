@@ -5,13 +5,13 @@ export class DinosaurSpawner {
   constructor({ amount, images }) {
     this.amount = amount
     this.images = images
+    this.positions
     this.dinosaurs = {}
   }
   getSpawnPoint() {
     const spawnAxis = Math.random() < 0.5 ? 'x' : 'y'
     const spawnSide = Math.random()
     const imageIndex = Math.round(getBoundedRandom(0, this.images.length - 1))
-    console.log(imageIndex)
     const spawnPadding = 40
     let spawnPosition
     let spawnVelocity
@@ -22,8 +22,8 @@ export class DinosaurSpawner {
           y: 0 - spawnPadding,
         }
         spawnVelocity = {
-          x: getBoundedRandom(-0.3, 0.3),
-          y: getBoundedRandom(0.15, 0.5),
+          x: getBoundedRandom(-1.3, 1.3),
+          y: getBoundedRandom(1.15, 1.5),
         }
       } else {
         spawnPosition = {
@@ -31,8 +31,8 @@ export class DinosaurSpawner {
           y: innerHeight + spawnPadding,
         }
         spawnVelocity = {
-          x: getBoundedRandom(-0.3, 0.3),
-          y: getBoundedRandom(-0.15, -0.5),
+          x: getBoundedRandom(-1.3, 1.3),
+          y: getBoundedRandom(-1.15, -1.5),
         }
       }
     }
@@ -43,8 +43,8 @@ export class DinosaurSpawner {
           y: Math.random() * innerHeight,
         }
         spawnVelocity = {
-          x: getBoundedRandom(0.15, 0.5),
-          y: getBoundedRandom(-0.3, 0.3),
+          x: getBoundedRandom(1.15, 1.5),
+          y: getBoundedRandom(-1.3, 1.3),
         }
       } else {
         spawnPosition = {
@@ -52,8 +52,8 @@ export class DinosaurSpawner {
           y: Math.random() * innerHeight,
         }
         spawnVelocity = {
-          x: getBoundedRandom(-0.15, -0.5),
-          y: getBoundedRandom(-0.3, 0.3),
+          x: getBoundedRandom(-1.15, -1.5),
+          y: getBoundedRandom(-1.3, 1.3),
         }
       }
     }
@@ -63,6 +63,13 @@ export class DinosaurSpawner {
   buildDinosaurs(frame) {
     //get the keys of the dinosaurs obj for looping
     const dinosaursKeys = Object.keys(this.dinosaurs) || []
+
+    let dinoPositions = []
+    dinosaursKeys.forEach((dinokey) => {
+      dinoPositions.push(this.dinosaurs[dinokey].position.x)
+      dinoPositions.push(this.dinosaurs[dinokey].position.y)
+    })
+    this.dinoPositions = dinoPositions
 
     //only create new dinosaurs if there are not enough
     if (dinosaursKeys.length < this.amount) {

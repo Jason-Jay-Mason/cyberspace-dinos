@@ -72,10 +72,11 @@ export class Dinosaur extends Sprite {
     this.destroyedFrame = null
     this.explosionVelocity = 2
     this.explosionParticles = generateExplosionArray()
+    this.playerDistance = 0
   }
 
   handleAnimate(frame) {
-    if (this.updateFrame + 30 < frame) {
+    if (this.updateFrame + 700 < frame) {
       this.updateFrame = frame
       this.currentSprite.x = this.spriteIndex.x * this.crop.x
       if (this.spriteIndex.x >= 1) {

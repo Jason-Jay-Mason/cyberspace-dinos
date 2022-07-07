@@ -1,6 +1,7 @@
 import { Controles } from './controles.js'
 import { Laser } from './laser'
 import { Sprite } from './sprite'
+import { Network } from './network'
 
 export class Player extends Sprite {
   constructor({
@@ -12,6 +13,7 @@ export class Player extends Sprite {
     rotation,
     thrust,
     playerType,
+    dinoCount,
   }) {
     //sprite props
     super({
@@ -41,11 +43,18 @@ export class Player extends Sprite {
       x: 0,
       y: 0,
     }
-    this.controles = new Controles()
+    this.controles = new Controles(playerType)
     this.lasers = {}
     this.score = 0
     this.thrusterLengnth = 0
+    this.dinoRadar = [innerWidth, innerHeight]
     this.isAi = playerType == 'ai'
+    this.ai = new Network({
+      inputCount: dinoCount * 2 + 3,
+      outputCount: 4,
+      hiddenLayers: 2,
+      hiddenLayerInputCount: dinoCount * 2 + 3,
+    })
   }
 
   activatePrimaryThrusters() {
@@ -57,10 +66,16 @@ export class Player extends Sprite {
       this.velocity.y +
       factor * (Math.sin(this.rotation - Math.PI / 2) * this.thrust)
   }
-  activateRotationThrusters() {
-    if (this.controles.right && !this.controles.left) {
-      this.rotation = this.rotation + 0.07
-    } else if (this.controles.left && !this.controles.right) {
+  activateRotationThrusters(direction) {
+    if (direction == 'right') {
+      //add 0.07 radians to the rotatation with modulo so that values do not become greater than Tau radians
+      this.rotation = (this.rotation % (2 * Math.PI)) + 0.07
+    } else if (direction == 'left') {
+      //add this conditional to make the rotation not drop below 0 radians, this will help the neuro network train faster theoreticaly
+      if (this.rotation <= 0) {
+        this.rotation = this.rotation + 2 * Math.PI
+      }
+      //subtract 0.07 radians from the rotation
       this.rotation = this.rotation - 0.07
     }
   }
@@ -69,7 +84,7 @@ export class Player extends Sprite {
     //get the frame that the last laser was fired
     let lastLaserFrame = parseInt(laserKeys[laserKeys.length - 1]) || -10
     //see if the fire button is pushed and if the gun is ready to shoot again
-    if (lastLaserFrame + 10 < frame) {
+    if (lastLaserFrame + 170 < frame) {
       const rotation = this.rotation
       //set the position that the laser appears relative to this player
       const position = {
@@ -150,8 +165,17 @@ export class Player extends Sprite {
   }
 
   controleShip(frame) {
-    if (this.controles.left || this.controles.right) {
-      this.activateRotationThrusters()
+    if (this.ai) {
+      this.controles.left = this.ai.outputs[0]
+      this.controles.right = this.ai.outputs[1]
+      this.controles.thrust = this.ai.outputs[2]
+      this.controles.fire = this.ai.outputs[3]
+    }
+    if (this.controles.left) {
+      this.activateRotationThrusters('left')
+    }
+    if (this.controles.right) {
+      this.activateRotationThrusters('right')
     }
     if (this.controles.thrust) {
       this.activatePrimaryThrusters()
@@ -159,6 +183,52 @@ export class Player extends Sprite {
     if (this.controles.fire) {
       this.fireLaser(frame)
     }
+  }
+  radarDectector(dinosaurs) {
+    let final = []
+    const dinoValues = Object.values(dinosaurs)
+    //go through the dinos and add their data to the radar in a usefull way
+    dinoValues.forEach((dino, i) => {
+      //get the distance to the dino relative to ship position on the cartesian plane
+      let dinox = dino.position.x - this.position.x
+      let dinoy = this.position.y - dino.position.y
+
+      //target the oldest dinosaur by passing the amount of radians the ship needs to rotate in order to shoot the dino
+      if (i === 0) {
+        //get the position in radians that the dino is relative to the ship
+        let rotation = Math.atan(dinox / dinoy)
+        //since arch tan returns a radian as a element of {R: r >-pi/2<pi/2} it is more usefull to let the radian be an element of {R: r>0<2PI}
+        if (dinoy < 0) {
+          rotation = Math.PI + rotation
+        }
+        if (dinoy > 0 && dinox < 0) {
+          rotation = (7 / 4) * Math.PI + rotation
+        }
+        let target = rotation - this.rotation
+        final.push(target)
+      }
+      //add dino x,y positions relative to this player
+      final.push(dinox)
+      final.push(dinoy)
+      //there are 3*dinos + 1 outputs form this that get added to the radar
+    })
+    //need to add the boundaries to the radar
+    let y =
+      Math.abs(this.position.y - innerHeight / 2) -
+      innerHeight / 2 +
+      this.boundaryPadding
+    let x =
+      Math.abs(this.position.x - innerWidth / 2) -
+      innerWidth / 2 +
+      this.boundaryPadding
+    final.push(Math.abs(x))
+    final.push(Math.abs(y))
+
+    // //finally push the rotation to the radar
+    // final.push(this.rotation)
+
+    // dinoRadar.length = dinovalues.length*3 + 2(boundaries) + 1(rotation) + 1(targeted dino) = dinovalues.length*3 + 4
+    this.dinoRadar = final
   }
 
   render(ctx) {
@@ -196,7 +266,13 @@ export class Player extends Sprite {
     ctx.resetTransform()
   }
 
-  update(ctx, frame) {
+  update(ctx, frame, dinosaurs) {
+    if (this.isAi) {
+      this.radarDectector(dinosaurs)
+      const outputs = Network.feed(this.dinoRadar, this.ai)
+      this.ai.outputs = outputs
+    }
+
     this.controleShip(frame)
     this.updateShipPosition()
     this.updateLaserPositions(ctx)
