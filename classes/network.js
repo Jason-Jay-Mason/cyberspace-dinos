@@ -1,7 +1,7 @@
 import { getBoundedRandom } from '../utils/game-utils'
 
 function sigmoid(x) {
-  return 1 / (1 + Math.pow(Math.E, -x))
+  return 1 / (1 + Math.pow(1.01, -x))
 }
 
 function cost(trainingOuput, realOutput) {
@@ -59,7 +59,7 @@ export class Network {
     //for each of the network outputs and trainingData, run the cost function
     let costs = []
     for (let i = 0; i < trainingData.length; i++) {
-      costs.push(cost2(trainingData[i], networkOutputs[i]))
+      costs.push(cost(trainingData[i], networkOutputs[i]))
     }
 
     // put the costs the costs frames array on the network
