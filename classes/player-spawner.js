@@ -1,4 +1,3 @@
-import { Network } from './network'
 import { Player } from './player'
 
 export class PlayerSpawner {
@@ -14,20 +13,31 @@ export class PlayerSpawner {
     this.bestPlayer
     this.loading = false
   }
+  //function to save networks by hitting th api endpoint
   async saveNetwork(network) {
-    const res = await fetch('/api/network/', {
-      method: 'POST',
-      headers: { 'Content-type': 'application/json' },
-      body: JSON.stringify(network),
-    })
-    const json = await res.json()
-    console.log(json)
+    try {
+      const res = await fetch('/api/network/', {
+        method: 'POST',
+        headers: { 'Content-type': 'application/json' },
+        body: JSON.stringify(network),
+      })
+      const json = await res.json()
+      console.log(json)
+    } catch (err) {
+      console.error(err)
+    }
   }
+  //load networks form the endpoint
   async loadNetwork() {
-    const res = await fetch('/api/network/')
-    const network = await res.json()
-    return network
+    try {
+      const res = await fetch('/api/network/')
+      const network = await res.json()
+      return network
+    } catch (err) {
+      console.error(err)
+    }
   }
+  //find the best player, and save it's network when it breaks records and remove the duds
   deletePlayers() {
     this.playerKeys = Object.keys(this.players) || []
     if (this.playerKeys.length == 0) {
@@ -46,7 +56,7 @@ export class PlayerSpawner {
       this.saveNetwork(this.bestPlayer.ai)
     }
     this.playerKeys.forEach((playerKey) => {
-      if (this.players[playerKey].score + 1000 < this.bestPlayer.score) {
+      if (this.players[playerKey].score + 30 < this.bestPlayer.score) {
         delete this.players[playerKey]
       }
     })
@@ -73,7 +83,7 @@ export class PlayerSpawner {
         playerType: 'ai',
         dinoCount: this.dinoCount,
         startScore: this.bestPlayer ? this.bestPlayer.score : 0,
-        network: res.network ? JSON.parse(res.network) : null,
+        // network: res.network ? JSON.parse(res.network) : null,
       })
       //add the dino to the dinosaurs object
       this.players[frame] = player

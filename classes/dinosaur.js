@@ -74,6 +74,7 @@ export class Dinosaur extends Sprite {
     this.explosionParticles = generateExplosionArray()
     this.playerDistance = 0
     this.collision = false
+    this.playerDistance
   }
 
   handleAnimate(frame) {

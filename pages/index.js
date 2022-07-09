@@ -29,15 +29,14 @@ export default function Home() {
 
       //generate an object with dinosaurs with a key equal to the created frame, the amount is the max amount of dinos that will be on screen
       const dinosaurSpawner = new DinosaurSpawner({
-        amount: 1,
+        amount: 4,
         images: dinoImages,
       })
 
       const playerSpawner = new PlayerSpawner({
-        amount: 3,
+        amount: 1,
         playerImg: playerImg,
         laserImg: laserImg,
-        dinoCount: dinosaurSpawner.amount,
       })
 
       //declaring a number that increase by one every time the render function is called. This is so that we can have a messurment of time in the game
@@ -65,6 +64,9 @@ export default function Home() {
               player.position.x - dinosaurSpawner.dinosaurs[dinoKey].position.x,
               player.position.y - dinosaurSpawner.dinosaurs[dinoKey].position.y
             )
+
+            //set the player distance on the dino
+            dinosaurSpawner.dinosaurs[dinoKey].playerDistance = playerDistance
 
             if (
               dinosaurSpawner.dinosaurs[dinoKey].collision == true &&

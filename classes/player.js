@@ -13,7 +13,6 @@ export class Player extends Sprite {
     rotation,
     thrust,
     playerType,
-    dinoCount,
     startScore,
     network,
   }) {
@@ -55,14 +54,13 @@ export class Player extends Sprite {
       this.ai = network
     } else {
       this.ai = new Network({
-        inputCount: dinoCount * 2 + 3,
+        training: true,
+        inputCount: 10,
         outputCount: 4,
-        hiddenLayers: 2,
-        hiddenLayerInputCount: dinoCount * 2 + 3,
+        hiddenLayers: 1,
+        hiddenLayerInputCount: 7,
       })
     }
-
-    console.log(this.network)
   }
 
   activatePrimaryThrusters() {
@@ -177,12 +175,12 @@ export class Player extends Sprite {
   }
 
   controleShip(frame) {
-    if (this.ai) {
-      this.controles.left = this.ai.outputs[0]
-      this.controles.right = this.ai.outputs[1]
-      this.controles.thrust = this.ai.outputs[2]
-      this.controles.fire = this.ai.outputs[3]
-    }
+    // if (this.ai) {
+    //   this.controles.left = this.ai.outputs[0]
+    //   this.controles.right = this.ai.outputs[1]
+    //   this.controles.thrust = this.ai.outputs[2]
+    //   this.controles.fire = this.ai.outputs[3]
+    // }
     if (this.controles.left) {
       this.activateRotationThrusters('left')
     }
@@ -199,14 +197,53 @@ export class Player extends Sprite {
   radarDectector(dinosaurs) {
     let final = []
     const dinoValues = Object.values(dinosaurs)
-    //go through the dinos and add their data to the radar in a usefull way
-    dinoValues.forEach((dino, i) => {
-      //get the distance to the dino relative to ship position on the cartesian plane
-      let dinox = dino.position.x - this.position.x
-      let dinoy = this.position.y - dino.position.y
 
-      //target the oldest dinosaur by passing the amount of radians the ship needs to rotate in order to shoot the dino
-      if (i === 0) {
+    //input patern will be:
+    // [1.(player distance to x screen bound),
+    // 2.(player distance to y screen bound),
+    // 3.(player velocity x),
+    // 4. (player velocity y),
+    // 5. (closestDino rotation),
+    // 6. (closestDino x),
+    // 7. (closestDino y),
+    // 8. (oldestDino rotation),
+    // 9. (oldestDino x),
+    // 10.(oldestDino y)]
+
+    //adding the distance to the edges of the screen
+    let x =
+      Math.abs(this.position.x - innerWidth / 2) -
+      innerWidth / 2 +
+      this.boundaryPadding
+    let y =
+      Math.abs(this.position.y - innerHeight / 2) -
+      innerHeight / 2 +
+      this.boundaryPadding
+
+    final.push(x)
+    final.push(y)
+
+    //pushing in the velocity
+    final.push(this.velocity.x)
+    final.push(this.velocity.y)
+
+    // we want to get the closest dino and the oldest dino to target, and ignore the rest because we want the number of inputs to be constant and not dependant on the number of dinos
+    if (dinoValues.length) {
+      const closestDino = dinoValues.reduce((closestDino, dino) => {
+        if (dino.playerDistance < closestDino) {
+          return dino
+        }
+        return closestDino
+      })
+      //get the oldest dino
+      const oldestDino = dinoValues[0]
+      const targets = [closestDino, oldestDino]
+
+      targets.forEach((dino) => {
+        //get the distance to the dino relative to ship position on the cartesian plane
+        let dinox = dino.position.x - this.position.x
+        let dinoy = this.position.y - dino.position.y
+
         //get the position in radians that the dino is relative to the ship
         let rotation = Math.atan(dinox / dinoy)
         //since arch tan returns a radian as a element of {R: r >-pi/2<pi/2} it is more usefull to let the radian be an element of {R: r>0<2PI}
@@ -216,28 +253,15 @@ export class Player extends Sprite {
         if (dinoy > 0 && dinox < 0) {
           rotation = (7 / 4) * Math.PI + rotation
         }
-        let target = rotation - this.rotation
-        final.push(target)
-      }
-      //add dino x,y positions relative to this player
-      final.push(dinox)
-      final.push(dinoy)
-      //there are 3*dinos + 1 outputs form this that get added to the radar
-    })
-    //need to add the boundaries to the radar
-    let y =
-      Math.abs(this.position.y - innerHeight / 2) -
-      innerHeight / 2 +
-      this.boundaryPadding
-    let x =
-      Math.abs(this.position.x - innerWidth / 2) -
-      innerWidth / 2 +
-      this.boundaryPadding
-    final.push(x)
-    final.push(y)
+        let radiansToTarget = rotation - this.rotation
 
-    // dinoRadar.length = dinovalues.length*3 + 2(boundaries) + 1(rotation) + 1(targeted dino) = dinovalues.length*3 + 4
-    this.dinoRadar = final
+        final.push(radiansToTarget)
+        final.push(dinox)
+        final.push(dinoy)
+      })
+
+      this.dinoRadar = final
+    }
   }
 
   fitness() {
@@ -296,12 +320,22 @@ export class Player extends Sprite {
   }
 
   update(ctx, frame, dinosaurs) {
-    // this.fitness()
-    console.log(this.score)
+    // perform ml stuff here
     if (this.isAi) {
+      //get the inputs for the network
       this.radarDectector(dinosaurs)
+      //feed those new inputs to the network
       const outputs = Network.feed(this.dinoRadar, this.ai)
       this.ai.outputs = outputs
+
+      const trainingData = Object.values(this.controles)
+
+      const newNetwork = Network.trainNetwork({
+        trainingData,
+        networkOutputs: outputs,
+        network: this.ai,
+      })
+      this.ai = newNetwork
     }
 
     this.controleShip(frame)
