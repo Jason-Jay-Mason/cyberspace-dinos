@@ -175,12 +175,12 @@ export class Player extends Sprite {
   }
 
   controleShip(frame) {
-    // if (this.ai) {
-    //   this.controles.left = this.ai.outputs[0]
-    //   this.controles.right = this.ai.outputs[1]
-    //   this.controles.thrust = this.ai.outputs[2]
-    //   this.controles.fire = this.ai.outputs[3]
-    // }
+    if (this.ai && this.ai.training === false) {
+      this.controles.left = this.ai.outputs[0]
+      this.controles.right = this.ai.outputs[1]
+      this.controles.thrust = this.ai.outputs[2]
+      this.controles.fire = this.ai.outputs[3]
+    }
     if (this.controles.left) {
       this.activateRotationThrusters('left')
     }
@@ -319,26 +319,48 @@ export class Player extends Sprite {
     ctx.resetTransform()
   }
 
+  async trainAi(network) {
+    this.ai.trainingInProgress = true
+    const res = await fetch('/api/train-network', {
+      method: 'POST',
+      headers: { 'Content-type': 'application/json' },
+      body: JSON.stringify(network),
+    })
+    const newNetwork = await res.json()
+    console.log(newNetwork)
+    this.ai.costFrames = []
+    this.ai.trainingInProgress = false
+  }
+
   update(ctx, frame, dinosaurs) {
+    this.controleShip(frame)
     // perform ml stuff here
     if (this.isAi) {
       //get the inputs for the network
       this.radarDectector(dinosaurs)
+
       //feed those new inputs to the network
-      const outputs = Network.feed(this.dinoRadar, this.ai)
-      this.ai.outputs = outputs
+      const network = Network.feed(this.dinoRadar, this.ai)
 
-      const trainingData = Object.values(this.controles)
-
-      const newNetwork = Network.trainNetwork({
-        trainingData,
-        networkOutputs: outputs,
-        network: this.ai,
-      })
-      this.ai = newNetwork
+      if (this.ai.training) {
+        if (!this.ai.trainingInProgress) {
+          const trainingData = Object.values(this.controles)
+          const newNetwork = Network.getCosts({
+            trainingData,
+            network: this.ai,
+          })
+          if (newNetwork.costFrames.length > 10) {
+            this.trainAi(newNetwork)
+          } else {
+            this.ai = newNetwork
+          }
+        }
+      } else {
+        this.ai = network
+        this.controles = this.ai.outputs
+      }
     }
 
-    this.controleShip(frame)
     this.updateShipPosition()
     this.updateLaserPositions(ctx)
 

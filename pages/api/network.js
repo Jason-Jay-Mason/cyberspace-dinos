@@ -32,7 +32,6 @@ export default function handler(req, res) {
   if (req.method === 'GET') {
     try {
       const network = loadNetwork(data)
-      console.log(network)
       res.status(200).json({ network })
     } catch (err) {
       console.error(err)

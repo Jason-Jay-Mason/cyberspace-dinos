@@ -67,6 +67,8 @@ export class PlayerSpawner {
     if (this.playerKeys.length < this.amount) {
       //load best network
       const res = await this.loadNetwork()
+      const network = JSON.parse(res.network)
+      network.trainingInProgress = false
 
       //create a new player
       const player = new Player({
@@ -83,7 +85,7 @@ export class PlayerSpawner {
         playerType: 'ai',
         dinoCount: this.dinoCount,
         startScore: this.bestPlayer ? this.bestPlayer.score : 0,
-        // network: res.network ? JSON.parse(res.network) : null,
+        network: res.network ? network : null,
       })
       //add the dino to the dinosaurs object
       this.players[frame] = player
