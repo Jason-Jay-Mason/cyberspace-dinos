@@ -57,7 +57,7 @@ export class Player extends Sprite {
         training: true,
         inputCount: 10,
         outputCount: 4,
-        hiddenLayers: 1,
+        hiddenLayers: 2,
         hiddenLayerInputCount: 7,
       })
     }
@@ -319,23 +319,11 @@ export class Player extends Sprite {
     ctx.resetTransform()
   }
 
-  async trainAi(network) {
-    this.ai.trainingInProgress = true
-    const res = await fetch('/api/train-network', {
-      method: 'POST',
-      headers: { 'Content-type': 'application/json' },
-      body: JSON.stringify(network),
-    })
-    const newNetwork = await res.json()
-    console.log(newNetwork)
-    this.ai.costFrames = []
-    this.ai.trainingInProgress = false
-  }
-
   update(ctx, frame, dinosaurs) {
     this.controleShip(frame)
     // perform ml stuff here
     if (this.isAi) {
+      console.log(this.ai)
       //get the inputs for the network
       this.radarDectector(dinosaurs)
 
@@ -343,18 +331,6 @@ export class Player extends Sprite {
       const network = Network.feed(this.dinoRadar, this.ai)
 
       if (this.ai.training) {
-        if (!this.ai.trainingInProgress) {
-          const trainingData = Object.values(this.controles)
-          const newNetwork = Network.getCosts({
-            trainingData,
-            network: this.ai,
-          })
-          if (newNetwork.costFrames.length > 10) {
-            this.trainAi(newNetwork)
-          } else {
-            this.ai = newNetwork
-          }
-        }
       } else {
         this.ai = network
         this.controles = this.ai.outputs

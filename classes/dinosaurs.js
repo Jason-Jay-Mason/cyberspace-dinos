@@ -23,8 +23,8 @@ export class DinosaurSpawner {
           y: 0 - spawnPadding,
         }
         spawnVelocity = {
-          x: getBoundedRandom(-1.3, 1.3),
-          y: getBoundedRandom(1.15, 1.5),
+          x: getBoundedRandom(-0.2, 0.2),
+          y: getBoundedRandom(0.3, 0.8),
         }
       } else {
         spawnPosition = {
@@ -32,8 +32,8 @@ export class DinosaurSpawner {
           y: innerHeight + spawnPadding,
         }
         spawnVelocity = {
-          x: getBoundedRandom(-1.3, 1.3),
-          y: getBoundedRandom(-1.15, -1.5),
+          x: getBoundedRandom(-0.2, 0.2),
+          y: getBoundedRandom(-0.3, -0.8),
         }
       }
     }
@@ -44,8 +44,8 @@ export class DinosaurSpawner {
           y: Math.random() * innerHeight,
         }
         spawnVelocity = {
-          x: getBoundedRandom(1.15, 1.5),
-          y: getBoundedRandom(-1.3, 1.3),
+          x: getBoundedRandom(0.3, 0.8),
+          y: getBoundedRandom(-0.2, 0.2),
         }
       } else {
         spawnPosition = {
@@ -53,8 +53,8 @@ export class DinosaurSpawner {
           y: Math.random() * innerHeight,
         }
         spawnVelocity = {
-          x: getBoundedRandom(-1.15, -1.5),
-          y: getBoundedRandom(-1.3, 1.3),
+          x: getBoundedRandom(-0.3, -0.8),
+          y: getBoundedRandom(-0.2, 0.2),
         }
       }
     }
@@ -88,7 +88,7 @@ export class DinosaurSpawner {
           x: spawnVelocity.x,
           y: spawnVelocity.y,
         },
-        rotationVelocity: getBoundedRandom(-0.007, 0.007),
+        rotationVelocity: getBoundedRandom(-0.01, 0.01),
         width: this.images[imageIndex].width,
         height: this.images[imageIndex].height,
       })

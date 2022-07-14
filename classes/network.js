@@ -1,21 +1,7 @@
 import { getBoundedRandom } from '../utils/game-utils'
 
-function sigmoid(x) {
-  return 1 / (1 + Math.pow(1.01, -x))
-}
-
 function cost(trainingData, realOutput) {
   return realOutput - trainingData
-}
-function cost2(trainingOuput, realOutput) {
-  if (trainingOuput === 0) {
-    //if the training output is 0 we want our realOutput to be roughly = to 0 so we let the output cost be negative
-    return Math.log(1 - realOutput)
-  }
-  if (trainingOuput === 1) {
-    //if the trainingOuput is 1 we want our output to be possitive
-    return -Math.log(realOutput)
-  }
 }
 
 export class Network {
@@ -34,7 +20,7 @@ export class Network {
     this.outputs = new Array(outputCount)
     this.layers = []
     this.costFrames = []
-    for (let i = 0; i < hiddenLayers + 2; i++) {
+    for (let i = 0; i < hiddenLayers + 1; i++) {
       if (i === 0) {
         this.layers.push(
           new Layer({
@@ -42,7 +28,7 @@ export class Network {
             outputCount: this.hiddenLayerInputCount,
           })
         )
-      } else if (i === hiddenLayers + 1) {
+      } else if (i === hiddenLayers) {
         this.layers.push(
           new Layer({
             inputCount: hiddenLayerInputCount,
@@ -60,25 +46,7 @@ export class Network {
     }
   }
 
-  static getCosts({ trainingData, network }) {
-    let costs = []
-    for (let i = 0; i < trainingData.length; i++) {
-      costs[i] = cost(
-        trainingData[i],
-        network.layers[network.layers.length - 1].outputs[i]
-      )
-    }
-    let singularOutputs = []
-    for (let i = 0; i < network.layers.length; i++) {
-      singularOutputs[i] = network.layers[i].singularOutputs
-    }
-    network.costFrames.push({
-      costs: costs,
-      network: { ...network, costFrames: null },
-    })
-
-    return network
-  }
+  static getCosts({ trainingData, network }) {}
 
   static feed(nextInputs, network) {
     let outputs = Layer.feed(nextInputs, network.layers[0])
@@ -104,10 +72,8 @@ export class Layer {
     this.outputs = new Array(outputCount)
     this.biases = new Array(outputCount)
     this.weights = new Array(inputCount)
-    this.singularOutputs = new Array(inputCount)
     for (let i = 0; i < inputCount; i++) {
       this.weights[i] = new Array(outputCount)
-      this.singularOutputs[i] = new Array(outputCount)
     }
 
     Layer.generateRandom(this)
@@ -129,9 +95,8 @@ export class Layer {
     for (let i = 0; i < layer.outputs.length; i++) {
       let sum = 0
       for (let j = 0; j < layer.inputs.length; j++) {
-        layer.singularOutputs[j][i] =
-          layer.weights[j][i] * inputs[j] + layer.biases[i]
-        sum = sum + layer.singularOutputs[j][i]
+        let a = layer.weights[j][i] * inputs[j] + layer.biases[i]
+        sum = sum + a
       }
       if (layer.outputs.length < 5) {
         if (training === true) {

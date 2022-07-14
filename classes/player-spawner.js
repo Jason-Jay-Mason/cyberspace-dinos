@@ -85,7 +85,7 @@ export class PlayerSpawner {
         playerType: 'ai',
         dinoCount: this.dinoCount,
         startScore: this.bestPlayer ? this.bestPlayer.score : 0,
-        network: res.network ? network : null,
+        // network: res.network ? network : null,
       })
       //add the dino to the dinosaurs object
       this.players[frame] = player
