@@ -1,7 +1,7 @@
 import { Controles } from './controles.js'
 import { Laser } from './laser'
 import { Sprite } from './sprite'
-import { Network } from './network'
+import { Ai } from './ai'
 
 export class Player extends Sprite {
   constructor({
@@ -14,7 +14,7 @@ export class Player extends Sprite {
     thrust,
     playerType,
     startScore,
-    network,
+    isAi,
   }) {
     //sprite props
     super({
@@ -48,17 +48,10 @@ export class Player extends Sprite {
     this.lasers = {}
     this.score = startScore
     this.thrusterLengnth = 0
-    this.dinoRadar = [innerWidth, innerHeight]
-    this.isAi = playerType == 'ai'
-    if (network) {
-      this.ai = network
-    } else {
-      this.ai = new Network({
-        training: true,
-        inputCount: 10,
-        outputCount: 4,
-        hiddenLayers: 2,
-        hiddenLayerInputCount: 7,
+    this.dinoRadar = []
+    if (isAi) {
+      this.ai = new Ai({
+        inputs: this.dinoRadar,
       })
     }
   }
@@ -175,12 +168,6 @@ export class Player extends Sprite {
   }
 
   controleShip(frame) {
-    if (this.ai && this.ai.training === false) {
-      this.controles.left = this.ai.outputs[0]
-      this.controles.right = this.ai.outputs[1]
-      this.controles.thrust = this.ai.outputs[2]
-      this.controles.fire = this.ai.outputs[3]
-    }
     if (this.controles.left) {
       this.activateRotationThrusters('left')
     }
@@ -198,36 +185,27 @@ export class Player extends Sprite {
     let final = []
     const dinoValues = Object.values(dinosaurs)
 
-    //input patern will be:
-    // [1.(player distance to x screen bound),
-    // 2.(player distance to y screen bound),
-    // 3.(player velocity x),
-    // 4. (player velocity y),
-    // 5. (closestDino rotation),
-    // 6. (closestDino x),
-    // 7. (closestDino y),
-    // 8. (oldestDino rotation),
-    // 9. (oldestDino x),
-    // 10.(oldestDino y)]
-
+    //#region player position items
     //adding the distance to the edges of the screen
-    let x =
-      Math.abs(this.position.x - innerWidth / 2) -
-      innerWidth / 2 +
-      this.boundaryPadding
-    let y =
-      Math.abs(this.position.y - innerHeight / 2) -
-      innerHeight / 2 +
-      this.boundaryPadding
 
-    final.push(x)
-    final.push(y)
+    // let x =
+    //   Math.abs(this.position.x - innerWidth / 2) -
+    //   innerWidth / 2 +
+    //   this.boundaryPadding
+    // let y =
+    //   Math.abs(this.position.y - innerHeight / 2) -
+    //   innerHeight / 2 +
+    //   this.boundaryPadding
+
+    // final.push(x)
+    // final.push(y)
 
     //pushing in the velocity
-    final.push(this.velocity.x)
-    final.push(this.velocity.y)
 
-    // we want to get the closest dino and the oldest dino to target, and ignore the rest because we want the number of inputs to be constant and not dependant on the number of dinos
+    // final.push(this.velocity.x)
+    // final.push(this.velocity.y)
+    //#endregion player positon items
+
     if (dinoValues.length) {
       const closestDino = dinoValues.reduce((closestDino, dino) => {
         if (dino.playerDistance < closestDino) {
@@ -235,14 +213,18 @@ export class Player extends Sprite {
         }
         return closestDino
       })
-      //get the oldest dino
-      const oldestDino = dinoValues[0]
-      const targets = [closestDino, oldestDino]
+
+      const targets = [closestDino]
 
       targets.forEach((dino) => {
         //get the distance to the dino relative to ship position on the cartesian plane
         let dinox = dino.position.x - this.position.x
         let dinoy = this.position.y - dino.position.y
+
+        const dinoDistance = Math.hypot(
+          this.position.x - dino.position.x,
+          this.position.y - dino.position.y
+        )
 
         //get the position in radians that the dino is relative to the ship
         let rotation = Math.atan(dinox / dinoy)
@@ -256,31 +238,10 @@ export class Player extends Sprite {
         let radiansToTarget = rotation - this.rotation
 
         final.push(radiansToTarget)
-        final.push(dinox)
-        final.push(dinoy)
+        final.push(dinoDistance - 60)
       })
 
       this.dinoRadar = final
-    }
-  }
-
-  fitness() {
-    if (this.velocity.x == 0 && this.velocity.y == 0) {
-      this.score -= 0.1
-    }
-    const centerBoarders = {
-      left: innerWidth / 2 - innerWidth * 0.25,
-      right: innerWidth / 2 + innerWidth * 0.25,
-      bottom: innerHeight / 2 + innerHeight * 0.25,
-      top: innerHeight / 2 - innerHeight * 0.25,
-    }
-    if (
-      this.position.x > centerBoarders.left &&
-      this.position.x < centerBoarders.right &&
-      this.position.y > centerBoarders.top &&
-      this.position.y < centerBoarders.bottom
-    ) {
-      this.score -= 0.1
     }
   }
 
@@ -318,39 +279,10 @@ export class Player extends Sprite {
 
     ctx.resetTransform()
   }
-  async trainAi(network) {
-    this.ai.trainingInProgress = true
-    const newNetwork = await Network.learn({
-      network,
-    })
-    console.log(newNetwork)
-    this.ai = newNetwork
-    this.ai.trainingInProgress = false
-  }
 
   update(ctx, frame, dinosaurs) {
     this.controleShip(frame)
-
-    if (this.isAi) {
-      this.radarDectector(dinosaurs)
-      const network = Network.feed(this.dinoRadar, this.ai)
-
-      if (this.ai.training && this.ai.trainingInProgress === false) {
-        const trainingData = Object.values(this.controles)
-        const costedNetwork = Network.backpropError({
-          trainingData,
-          network,
-        })
-        if (costedNetwork.epic.length > 100) {
-          this.trainAi(network)
-        } else {
-          this.ai = costedNetwork
-        }
-      } else {
-        this.ai = network
-        this.controles = this.ai.outputs
-      }
-    }
+    this.radarDectector(dinosaurs)
 
     this.updateShipPosition()
     this.updateLaserPositions(ctx)
