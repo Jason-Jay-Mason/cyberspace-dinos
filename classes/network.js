@@ -10,7 +10,7 @@ function getError(trainingOutput, realOutput) {
   return (realOutput - trainingOutput) / Math.abs(realOutput - trainingOutput)
 }
 function getDescentVelocity(beta, prevVelocity, dW) {
-  return beta * prevVelocity + (1 - beta) * dW
+  return beta * prevVelocity + dW
 }
 
 export class Network {
@@ -79,15 +79,15 @@ export class Network {
     }
 
     //adjust weights with gradient decent momentum
-    const learningRate = 1 * Math.pow(10, -7)
+    const learningRate = 1 * Math.pow(10, -8)
     const biasLearningRate = 0.01
     const beta = 0.9
 
     for (let i = 0; i < network.layers.length; i++) {
       for (let j = 0; j < network.layers[i].outputs.length; j++) {
-        // let dB = network.layers[i].dB[j]
-        // let newBias = network.layers[i].biases[j] - dB * biasLearningRate
-        // network.layers[i].biases[j] = newBias
+        let dB = network.layers[i].dB[j]
+        let newBias = network.layers[i].biases[j] - dB * biasLearningRate
+        network.layers[i].biases[j] = newBias
 
         for (let k = 0; k < network.layers[i].inputs.length; k++) {
           let weight = network.layers[i].weights[k][j]
@@ -95,7 +95,7 @@ export class Network {
           let prevVelocity = network.layers[i].velDw[k][j]
           let vel = getDescentVelocity(beta, prevVelocity, dW)
           let adjustment = learningRate * vel
-          let newWeight = weight - dW * learningRate
+          let newWeight = weight - learningRate * dW
           network.layers[i].velDw[k][j] = vel
           network.layers[i].weights[k][j] = newWeight
         }
@@ -197,7 +197,7 @@ export class Layer {
     }
     for (let i = 0; i < layer.biases.length; i++) {
       layer.dB[i] = 0
-      layer.biases[i] = getBoundedRandom(-0, 0)
+      layer.biases[i] = getBoundedRandom(-1, 1)
     }
   }
 

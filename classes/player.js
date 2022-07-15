@@ -58,7 +58,7 @@ export class Player extends Sprite {
         inputCount: 10,
         outputCount: 4,
         hiddenLayers: 2,
-        hiddenLayerInputCount: 16,
+        hiddenLayerInputCount: 7,
       })
     }
   }
@@ -341,7 +341,7 @@ export class Player extends Sprite {
           trainingData,
           network,
         })
-        if (costedNetwork.epic.length > 10) {
+        if (costedNetwork.epic.length > 100) {
           this.trainAi(network)
         } else {
           this.ai = costedNetwork
