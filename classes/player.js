@@ -58,7 +58,7 @@ export class Player extends Sprite {
         inputCount: 10,
         outputCount: 4,
         hiddenLayers: 2,
-        hiddenLayerInputCount: 7,
+        hiddenLayerInputCount: 16,
       })
     }
   }
@@ -318,19 +318,34 @@ export class Player extends Sprite {
 
     ctx.resetTransform()
   }
+  async trainAi(network) {
+    this.ai.trainingInProgress = true
+    const newNetwork = await Network.learn({
+      network,
+    })
+    console.log(newNetwork)
+    this.ai = newNetwork
+    this.ai.trainingInProgress = false
+  }
 
   update(ctx, frame, dinosaurs) {
     this.controleShip(frame)
-    // perform ml stuff here
-    if (this.isAi) {
-      console.log(this.ai)
-      //get the inputs for the network
-      this.radarDectector(dinosaurs)
 
-      //feed those new inputs to the network
+    if (this.isAi) {
+      this.radarDectector(dinosaurs)
       const network = Network.feed(this.dinoRadar, this.ai)
 
-      if (this.ai.training) {
+      if (this.ai.training && this.ai.trainingInProgress === false) {
+        const trainingData = Object.values(this.controles)
+        const costedNetwork = Network.backpropError({
+          trainingData,
+          network,
+        })
+        if (costedNetwork.epic.length > 10) {
+          this.trainAi(network)
+        } else {
+          this.ai = costedNetwork
+        }
       } else {
         this.ai = network
         this.controles = this.ai.outputs
