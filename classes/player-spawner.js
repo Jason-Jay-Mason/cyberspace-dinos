@@ -1,7 +1,7 @@
 import { Player } from './player'
 
 export class PlayerSpawner {
-  constructor({ amount, playerImg, laserImg }) {
+  constructor({ amount, playerImg, laserImg, isAi }) {
     this.amount = amount
     this.playerImg = playerImg
     this.laserImg = laserImg
@@ -10,6 +10,7 @@ export class PlayerSpawner {
     this.playerValues = []
     this.highestScore = 10
     this.bestPlayer
+    this.isAi = isAi
   }
 
   createPlayers(frame) {
@@ -28,7 +29,7 @@ export class PlayerSpawner {
         },
         rotation: 0,
         thrust: 0.09,
-        isAi: true,
+        isAi: this.isAi,
         dinoCount: this.dinoCount,
         startScore: this.bestPlayer ? this.bestPlayer.score : 0,
       })

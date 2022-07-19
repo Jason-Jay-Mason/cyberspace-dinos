@@ -36,6 +36,7 @@ export class DinoGame {
 
     const playerSpawner = new PlayerSpawner({
       amount: 1,
+      isAi: true,
       playerImg: playerImg,
       laserImg: laserImg,
     })

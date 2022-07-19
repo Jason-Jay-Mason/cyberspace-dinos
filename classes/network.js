@@ -1,16 +1,22 @@
 import { getBoundedRandom } from '../utils/game-utils'
 
-function getCost(trainingOutput, realOutput) {
-  //Get the absolute value of the difference between the ideal output and the realoutput, the operation is communitive
-  return Math.abs(realOutput - trainingOutput)
+function sigmoid(x) {
+  return 1 / (1 + Math.pow(Math.E, -x))
+}
+function getCost(trainingOutput, sigmoidOutput) {
+  return Math.pow(trainingOutput - sigmoidOutput, 2)
 }
 
-function getError(trainingOutput, realOutput) {
-  //use the derivative of the cost function with respect to the real output to get the error value
-  return (realOutput - trainingOutput) / Math.abs(realOutput - trainingOutput)
+function getError(trainingOutput, realOutput, sigmoidOutput) {
+  const dSig =
+    Math.pow(Math.E, -realOutput) /
+    Math.pow(1 + Math.pow(Math.E, -realOutput), 2)
+  const dCost = -2 * (trainingOutput - sigmoidOutput)
+  return dSig * dCost
 }
-function getDescentVelocity(beta, prevVelocity, dW) {
-  return beta * prevVelocity + dW
+
+function getDescentVelocity(beta, prevVelocity, dW, learningRate) {
+  return beta * prevVelocity + learningRate * dW
 }
 
 export class Network {
@@ -56,31 +62,30 @@ export class Network {
     }
   }
 
-  static async learn({ network }) {
-    //compute gradient vectors; ie the derivatives of the cost with respect to w[k][j] and b[j] using dC/da (the error vector)
+  static async learn(network) {
     for (let i = 0; i < network.layers.length; i++) {
       for (let j = 0; j < network.layers[i].outputs.length; j++) {
-        let dbSum = 0
+        let bsum = 0
         for (let k = 0; k < network.layers[i].inputs.length; k++) {
-          let dwSum = 0
+          let wsum = 0
           for (let l = 0; l < network.epic.length; l++) {
             let error = network.epic[l].layers[i].error[j]
             if (k === 0) {
-              dbSum += error
+              bsum += error
             }
             let input = network.epic[l].layers[i].inputs[k]
-            let dW = input * error
-            dwSum += dW
+            let dW = error * input
+            wsum += dW
           }
-          network.layers[i].dW[k][j] = dwSum
+          network.layers[i].dW[k][j] = wsum * (1 / network.epic.length)
         }
-        network.layers[i].dB[j] = dbSum
+        network.layers[i].dB[j] = bsum * (1 / network.epic.length)
       }
     }
 
     //adjust weights with gradient decent momentum
-    const learningRate = 1 * Math.pow(10, -8)
-    const biasLearningRate = 0.01
+    const learningRate = 1 * Math.pow(10, -1)
+    const biasLearningRate = 0.1
     const beta = 0.9
 
     for (let i = 0; i < network.layers.length; i++) {
@@ -93,9 +98,9 @@ export class Network {
           let weight = network.layers[i].weights[k][j]
           let dW = network.layers[i].dW[k][j]
           let prevVelocity = network.layers[i].velDw[k][j]
-          let vel = getDescentVelocity(beta, prevVelocity, dW)
+          let vel = getDescentVelocity(beta, prevVelocity, dW, learningRate)
           let adjustment = learningRate * vel
-          let newWeight = weight - learningRate * dW
+          let newWeight = weight - dW * learningRate
           network.layers[i].velDw[k][j] = vel
           network.layers[i].weights[k][j] = newWeight
         }
@@ -113,14 +118,15 @@ export class Network {
       //get the cost for this output
       let cost = getCost(
         trainingData[i],
-        network.layers[network.layers.length - 1].outputs[i]
+        network.layers[network.layers.length - 1].sigmoidOutputs[i]
       )
       costSum = costSum + cost
 
-      //calculate the error for this outputs
+      //calculate the error for this output
       let error = getError(
         trainingData[i],
-        network.layers[network.layers.length - 1].outputs[i]
+        network.layers[network.layers.length - 1].outputs[i],
+        network.layers[network.layers.length - 1].sigmoidOutputs[i]
       )
       network.layers[network.layers.length - 1].error[i] = error
     }
@@ -128,42 +134,73 @@ export class Network {
     // propogate errors to previous layers
     for (let i = network.layers.length - 1; i > 0; i--) {
       let errors = new Array(network.layers[i].inputs)
-      //loop through each of the weight arrays that correspond to each input
-      for (let j = 0; j < network.layers[i].weights.length; j++) {
-        //loop through the errors array for each of the inputs and get the error for the input[i][j]
-        let sum = 0
-        //pattern: jth weight array [k+ k2 + k3 + ... kn] -> jth error [j1, j2,...jn]
-        for (let k = 0; k < network.layers[i].error.length; k++) {
-          let error = network.layers[i].error[k]
-          let weight = network.layers[i].weights[j][k]
-          sum += weight * error
+      for (let j = 0; j < network.layers[i].outputs.length; j++) {
+        let error = network.layers[i].error[j]
+        for (let k = 0; k < network.layers[i].inputs.length; k++) {
+          if (j === 0) {
+            errors[k] = 0
+          }
+          let targetInput = network.layers[i].inputs[k]
+          let weight = network.layers[i].weights[k][j]
+          if (targetInput > 0) {
+            errors[k] = errors[k] + weight * error
+          } else {
+            errors[k] = errors[k] + weight * error * 0.01
+          }
         }
-        errors[j] = sum
       }
       network.layers[i - 1].error = errors
     }
 
-    network.cost = costSum
+    network.cost =
+      costSum * (1 / network.layers[network.layers.length - 1].outputs.length)
+
     const trainingExample = { layers: network.layers, cost: network.cost }
     network.epic.push(trainingExample)
 
     return network
   }
 
-  static feed(nextInputs, network) {
-    let outputs = Layer.feed(nextInputs, network.layers[0])
-    network.layers[0].outputs = outputs
+  static async feed(nextInputs, network) {
     network.layers[0].inputs = nextInputs
-
-    for (let i = 1; i < network.layers.length; i++) {
-      network.layers[i].inputs = network.layers[i - 1].outputs
-      network.layers[i].outputs = Layer.feed(
-        network.layers[i - 1].outputs,
-        network.layers[i],
-        network.training
-      )
+    for (let i = 0; i < network.layers.length; i++) {
+      if (i > 0) {
+        network.layers[i].inputs = network.layers[i - 1].outputs
+      }
+      if (i === network.layers.length - 1) {
+        network.layers[i].sigmoidOutputs = new Array(
+          network.layers[i].outputs.length
+        )
+      }
+      for (let j = 0; j < network.layers[i].outputs.length; j++) {
+        let sum = 0
+        let bias = network.layers[i].biases[j]
+        for (let k = 0; k < network.layers[i].inputs.length; k++) {
+          let weight = network.layers[i].weights[k][j]
+          let input = network.layers[i].inputs[k]
+          let output = input * weight + bias
+          sum += output
+        }
+        if (i === network.layers.length - 1) {
+          network.layers[i].outputs[j] = sum
+          network.layers[i].sigmoidOutputs[j] = sigmoid(sum)
+        } else {
+          //leaky ReLU
+          if (sum > 0) {
+            network.layers[i].outputs[j] = sum
+          } else {
+            network.layers[i].outputs[j] = sum * 0.01
+          }
+        }
+      }
     }
-    network.outputs = network.layers[network.layers.length - 1].outputs
+
+    network.outputs = network.layers[
+      network.layers.length - 1
+    ].sigmoidOutputs.map((output) => {
+      return output > 0.23 ? 1 : 0
+    })
+
     return network
   }
 }
@@ -199,36 +236,5 @@ export class Layer {
       layer.dB[i] = 0
       layer.biases[i] = getBoundedRandom(-1, 1)
     }
-  }
-
-  static feed(inputs = [0], layer, training) {
-    let outputs = []
-    for (let i = 0; i < layer.outputs.length; i++) {
-      let sum = 0
-      for (let j = 0; j < layer.inputs.length; j++) {
-        let a = layer.weights[j][i] * inputs[j] + layer.biases[i]
-        sum = sum + a
-      }
-      if (layer.outputs.length < 5) {
-        if (training === true) {
-          outputs.push(sum)
-        } else {
-          if (sum > 0) {
-            outputs.push(1)
-          } else {
-            outputs.push(0)
-          }
-        }
-      } else {
-        if (sum > 0) {
-          outputs.push(sum)
-        } else {
-          // Randomized negative outputs to negate dead neurons
-          let slopeModifier = getBoundedRandom(0.1, 0.5)
-          outputs.push(slopeModifier * sum)
-        }
-      }
-    }
-    return outputs
   }
 }
