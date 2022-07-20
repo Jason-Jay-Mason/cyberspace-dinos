@@ -69,17 +69,15 @@ export class Player extends Sprite {
   }
   activateRotationThrusters(direction) {
     if (direction == 'right') {
-      if (this.rotation > Math.PI) {
-        this.rotation = -this.rotation
-      } else {
-        this.rotation = this.rotation + this.rotationVelocity
-      }
+      //add 0.07 radians to the rotatation with modulo so that values do not become greater than Tau radians
+      this.rotation = (this.rotation % (2 * Math.PI)) + 0.07
     } else if (direction == 'left') {
-      if (this.rotation < -Math.PI) {
-        this.rotation = -this.rotation
-      } else {
-        this.rotation = this.rotation - this.rotationVelocity
+      //add this conditional to make the rotation not drop below 0 radians, this will help the neuro network train faster theoreticaly
+      if (this.rotation <= 0) {
+        this.rotation = this.rotation + 2 * Math.PI
       }
+      //subtract 0.07 radians from the rotation
+      this.rotation = this.rotation - 0.07
     }
   }
   fireLaser(frame) {
@@ -211,42 +209,53 @@ export class Player extends Sprite {
     //#endregion player positon items
 
     if (dinoValues.length) {
-      const closestDino = dinoValues.reduce((closestDino, dino) => {
+      let dino = dinoValues.reduce((closestDino, dino) => {
         if (dino.playerDistance < closestDino) {
           return dino
         }
         return closestDino
       })
 
-      const targets = [closestDino]
+      //get the distance to the dino relative to ship position on the cartesian plane
+      let dinoy = dino.position.x - this.position.x
+      let dinox = this.position.y - dino.position.y
 
-      targets.forEach((dino) => {
-        //get the distance to the dino relative to ship position on the cartesian plane
-        let dinoy = dino.position.x - this.position.x
-        let dinox = this.position.y - dino.position.y
+      const dinoDistance = Math.hypot(
+        this.position.x - dino.position.x,
+        this.position.y - dino.position.y
+      )
 
-        const dinoDistance = Math.hypot(
-          this.position.x - dino.position.x,
-          this.position.y - dino.position.y
-        )
+      //get the position in radians that the dino is relative to the ship
+      let rotation = Math.atan(dinox / dinoy)
+      //since arch tan returns a radian as a element of {R: r >-pi/2<pi/2} it is more usefull to let the radian be an element of {R: r>0<2PI}
 
-        //get the position in radians that the dino is relative to the ship
-        let rotation = Math.atan(dinox / dinoy)
-        //since arch tan returns a radian as a element of {R: r >-pi/2<pi/2} it is more usefull to let the radian be an element of {R: r>0<2PI}
-        if (dinoy > 0) {
-          rotation = Math.PI / 2 - rotation
-        } else {
-          rotation = -(Math.PI / 2 + rotation)
-        }
+      if (dinox > 0 && dinoy > 0) {
+        rotation = -rotation + Math.PI / 2
+      }
+      if (dinox < 0 && dinoy > 0) {
+        rotation = -rotation + Math.PI / 2
+      }
+      if (dinox < 0 && dinoy < 0) {
+        rotation = (3 / 2) * Math.PI - rotation
+      }
+      if (dinox > 0 && dinoy < 0) {
+        rotation = (3 / 2) * Math.PI - rotation
+      }
 
-        let radiansToTarget = Math.abs(this.rotation - rotation)
+      let radiansToTarget = rotation - this.rotation
+      if (radiansToTarget < 0) {
+        radiansToTarget = 2 * Math.PI + radiansToTarget
+      }
+      if (dinoy < 0) {
+        final.push(-radiansToTarget / (Math.PI * 2))
+      } else {
+        final.push(radiansToTarget / (Math.PI * 2))
+      }
 
-        let normalizedDinoDistance =
-          dinoDistance / Math.hypot(innerWidth, innerHeight)
+      let normalizedDinoDistance =
+        dinoDistance / Math.hypot(innerWidth, innerHeight)
 
-        final.push(-radiansToTarget)
-        final.push(-normalizedDinoDistance)
-      })
+      final.push(-normalizedDinoDistance)
 
       this.dinoRadar = final
     }
@@ -291,8 +300,24 @@ export class Player extends Sprite {
     this.controleShip(frame)
     if (this.ai) {
       this.radarDectector(dinosaurs)
-      let laserTrainingData = [this.controles.fire]
-      this.ai.update(this.dinoRadar, laserTrainingData)
+
+      let laserTrainingData = [0, 0, 0]
+      if (this.dinoRadar[1] > -0.8) {
+        if (this.dinoRadar[0] < 0.01 && this.dinoRadar[0] > -0.01) {
+          laserTrainingData[0] = 1
+        } else {
+          if (this.dinoRadar[0] < -0.5 || this.dinoRadar[0] > 0.5) {
+            laserTrainingData[1] = 1
+          } else {
+            laserTrainingData[2] = 1
+          }
+        }
+      }
+      this.controles.fire = laserTrainingData[0]
+      this.controles.left = laserTrainingData[1]
+      this.controles.right = laserTrainingData[2]
+
+      this.ai.update(this.dinoRadar, [laserTrainingData[0]])
       if (!this.ai.network.training) {
         this.controles.fire = this.ai.output[0]
       }

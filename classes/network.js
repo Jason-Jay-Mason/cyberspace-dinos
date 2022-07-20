@@ -97,11 +97,9 @@ export class Network {
         for (let k = 0; k < network.layers[i].inputs.length; k++) {
           let weight = network.layers[i].weights[k][j]
           let dW = network.layers[i].dW[k][j]
-          let prevVelocity = network.layers[i].velDw[k][j]
-          let vel = getDescentVelocity(beta, prevVelocity, dW, learningRate)
-          let adjustment = learningRate * vel
+
           let newWeight = weight - dW * learningRate
-          network.layers[i].velDw[k][j] = vel
+
           network.layers[i].weights[k][j] = newWeight
         }
       }
@@ -197,8 +195,8 @@ export class Network {
 
     network.outputs = network.layers[
       network.layers.length - 1
-    ].sigmoidOutputs.map((output) => {
-      return output > 0.23 ? 1 : 0
+    ].sigmoidOutputs.map((output, i) => {
+      return output > 0.5 ? 1 : 0
     })
 
     return network

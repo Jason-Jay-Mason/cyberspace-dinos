@@ -10,6 +10,7 @@ export default function Home() {
       //get the canvas context
       const ctx = canvas.getContext('2d')
       const dinoGame = new DinoGame({
+        dinosaurCount: 4,
         context: ctx,
       })
 

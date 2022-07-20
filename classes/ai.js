@@ -15,7 +15,7 @@ export class Ai {
       outputCount: 1,
       hiddenLayers: 1,
       hiddenLayerInputCount: 2,
-      training: false,
+      training: true,
     })
 
     const saveBtn = document.getElementById('save-network')
@@ -76,7 +76,7 @@ export class Ai {
         trainingData: trainingData,
         network: fedNet,
       })
-      if (errNetwork.epic.length > 99) {
+      if (errNetwork.epic.length > 1) {
         const newNetwork = await Network.learn(errNetwork)
         this.network = newNetwork
         console.log(newNetwork.cost)
