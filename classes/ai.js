@@ -12,9 +12,9 @@ export class Ai {
   initialize() {
     this.network = new Network({
       inputCount: this.inputs.length,
-      outputCount: 1,
+      outputCount: 3,
       hiddenLayers: 1,
-      hiddenLayerInputCount: 2,
+      hiddenLayerInputCount: 4,
       training: true,
     })
 

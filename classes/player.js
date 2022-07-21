@@ -317,9 +317,11 @@ export class Player extends Sprite {
       this.controles.left = laserTrainingData[1]
       this.controles.right = laserTrainingData[2]
 
-      this.ai.update(this.dinoRadar, [laserTrainingData[0]])
+      this.ai.update(this.dinoRadar, laserTrainingData)
       if (!this.ai.network.training) {
         this.controles.fire = this.ai.output[0]
+        this.controles.left = this.ai.output[1]
+        this.controles.right = this.ai.output[2]
       }
     }
 

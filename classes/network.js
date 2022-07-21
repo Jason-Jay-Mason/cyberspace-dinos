@@ -84,8 +84,8 @@ export class Network {
     }
 
     //adjust weights with gradient decent momentum
-    const learningRate = 1 * Math.pow(10, -1)
-    const biasLearningRate = 0.1
+    const learningRate = 1 * Math.pow(10, -3)
+    const biasLearningRate = 0.001
     const beta = 0.9
 
     for (let i = 0; i < network.layers.length; i++) {
@@ -192,11 +192,30 @@ export class Network {
         }
       }
     }
+    let next = { value: 0, index: 0 }
+    network.layers[network.layers.length - 1].sigmoidOutputs.forEach(
+      (output, i) => {
+        if (i === 0) {
+          return null
+        }
+        if (output > next.value) {
+          next.value = output
+          next.index = i
+        }
+      }
+    )
 
     network.outputs = network.layers[
       network.layers.length - 1
     ].sigmoidOutputs.map((output, i) => {
-      return output > 0.5 ? 1 : 0
+      switch (i) {
+        case 0:
+          return output > 0.5 ? 1 : 0
+        case 1:
+          return output > 0.18 ? 1 : 0
+        case 2:
+          return output > 0.18 ? 1 : 0
+      }
     })
 
     return network
@@ -227,12 +246,12 @@ export class Layer {
       for (let j = 0; j < layer.outputs.length; j++) {
         layer.velDw[i][j] = 0
         layer.dW[i][j] = 0
-        layer.weights[i][j] = getBoundedRandom(-1, 1)
+        layer.weights[i][j] = getBoundedRandom(-0.001, 0.001)
       }
     }
     for (let i = 0; i < layer.biases.length; i++) {
       layer.dB[i] = 0
-      layer.biases[i] = getBoundedRandom(-1, 1)
+      layer.biases[i] = getBoundedRandom(-0.001, 0.001)
     }
   }
 }
