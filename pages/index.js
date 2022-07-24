@@ -10,7 +10,7 @@ export default function Home() {
       //get the canvas context
       const ctx = canvas.getContext('2d')
       const dinoGame = new DinoGame({
-        dinosaurCount: 4,
+        dinosaurCount: 7,
         context: ctx,
       })
 
@@ -26,11 +26,6 @@ export default function Home() {
 
   return (
     <div className={styles.container}>
-      <div>
-        <button id='save-network'>save</button>
-        <button id='load-network'>load</button>
-        <button id='train-network'>train network</button>
-      </div>
       <canvas className={styles.canvas} ref={handleCanvasRef}></canvas>
     </div>
   )

@@ -51,10 +51,8 @@ export class Player extends Sprite {
     this.thrusterLengnth = 0
 
     if (isAi) {
-      this.dinoRadar = []
-      this.ai = new Ai({
-        inputs: this.dinoRadar,
-      })
+      this.dinoRadar = {}
+      this.ai = new Ai(this)
     }
   }
 
@@ -184,33 +182,20 @@ export class Player extends Sprite {
     }
   }
   radarDectector(dinosaurs) {
-    let final = []
     const dinoValues = Object.values(dinosaurs)
 
-    //#region player position items
-    //adding the distance to the edges of the screen
-
-    // let x =
-    //   Math.abs(this.position.x - innerWidth / 2) -
-    //   innerWidth / 2 +
-    //   this.boundaryPadding
-    // let y =
-    //   Math.abs(this.position.y - innerHeight / 2) -
-    //   innerHeight / 2 +
-    //   this.boundaryPadding
-
-    // final.push(x)
-    // final.push(y)
-
-    //pushing in the velocity
-
-    // final.push(this.velocity.x)
-    // final.push(this.velocity.y)
-    //#endregion player positon items
+    let x =
+      Math.abs(this.position.x - innerWidth / 2) -
+      innerWidth / 2 +
+      this.boundaryPadding
+    let y =
+      Math.abs(this.position.y - innerHeight / 2) -
+      innerHeight / 2 +
+      this.boundaryPadding
 
     if (dinoValues.length) {
       let dino = dinoValues.reduce((closestDino, dino) => {
-        if (dino.playerDistance < closestDino) {
+        if (dino.playerDistance < closestDino.playerDistance) {
           return dino
         }
         return closestDino
@@ -243,21 +228,41 @@ export class Player extends Sprite {
       }
 
       let radiansToTarget = rotation - this.rotation
+
       if (radiansToTarget < 0) {
         radiansToTarget = 2 * Math.PI + radiansToTarget
-      }
-      if (dinoy < 0) {
-        final.push(-radiansToTarget / (Math.PI * 2))
-      } else {
-        final.push(radiansToTarget / (Math.PI * 2))
       }
 
       let normalizedDinoDistance =
         dinoDistance / Math.hypot(innerWidth, innerHeight)
 
-      final.push(-normalizedDinoDistance)
+      let xPosition = (this.position.x - innerWidth / 2) / (innerWidth / 2)
+      let yPosition = -(this.position.y - innerHeight / 2) / (innerHeight / 2)
 
-      this.dinoRadar = final
+      let direction = Math.atan(this.velocity.x / -this.velocity.y)
+      if (this.velocity.x > 0 && this.velocity.y < 0) {
+        direction = direction
+      }
+      if (this.velocity.y > 0) {
+        direction = direction + Math.PI
+      }
+      if (this.velocity.x < 0 && this.velocity.y < 0) {
+        direction = direction + 2 * Math.PI
+      }
+
+      this.dinoRadar = {
+        xPosition: xPosition,
+        yPosition: yPosition,
+        xToCenter: x,
+        yToCenter: y,
+        direction: direction,
+        oppositeDirection: (direction + Math.PI) % (2 * Math.PI),
+        xTargetPosition: dino.position.x - innerWidth / 2,
+        yTargetPosition: dino.position.y - innerHeight / 2,
+        targetDistance: normalizedDinoDistance,
+        targetRadians: radiansToTarget,
+        netVelocity: Math.abs(this.velocity.x) + Math.abs(this.velocity.y),
+      }
     }
   }
 
@@ -298,31 +303,10 @@ export class Player extends Sprite {
 
   update(ctx, frame, dinosaurs) {
     this.controleShip(frame)
+
     if (this.ai) {
       this.radarDectector(dinosaurs)
-
-      let laserTrainingData = [0, 0, 0]
-      if (this.dinoRadar[1] > -0.8) {
-        if (this.dinoRadar[0] < 0.01 && this.dinoRadar[0] > -0.01) {
-          laserTrainingData[0] = 1
-        } else {
-          if (this.dinoRadar[0] < -0.5 || this.dinoRadar[0] > 0.5) {
-            laserTrainingData[1] = 1
-          } else {
-            laserTrainingData[2] = 1
-          }
-        }
-      }
-      this.controles.fire = laserTrainingData[0]
-      this.controles.left = laserTrainingData[1]
-      this.controles.right = laserTrainingData[2]
-
-      this.ai.update(this.dinoRadar, laserTrainingData)
-      if (!this.ai.network.training) {
-        this.controles.fire = this.ai.output[0]
-        this.controles.left = this.ai.output[1]
-        this.controles.right = this.ai.output[2]
-      }
+      this.ai.feed()
     }
 
     this.updateShipPosition()
